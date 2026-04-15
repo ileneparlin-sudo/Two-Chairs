@@ -519,6 +519,44 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
 .game-shell.ending-close .g-header{border-bottom-color:rgba(60,50,50,0.2)}
 .game-shell.ending-close .keepsake-line{color:#3a3030}
 
+/* ── RIFT PROMPT & GATE ── */
+.rift-prompt{
+  text-align:center;padding:1.2rem;
+  border:1px solid rgba(201,168,76,0.25);
+  background:rgba(201,168,76,0.04);
+  font-style:italic;font-size:clamp(13px,1.4vw,16px);
+  color:#c4a878;line-height:1.8;
+}
+.rift-prompt .prompt-label{
+  font-family:'Cinzel',serif;font-size:9px;
+  letter-spacing:0.4em;text-transform:uppercase;
+  color:var(--gold-dim);display:block;margin-bottom:0.6rem;
+  font-style:normal;
+}
+.rift-prompt .prompt-arrow{
+  display:block;margin-top:0.8rem;
+  font-size:10px;color:#8a7050;
+  animation:dotPulse 1.4s infinite;
+}
+.rift-gate{
+  text-align:center;padding:1.2rem;
+  border:1px solid rgba(138,26,26,0.25);
+  background:rgba(138,26,26,0.04);
+  font-style:italic;font-size:clamp(13px,1.4vw,16px);
+  color:#d09090;line-height:1.8;
+}
+.rift-gate .gate-label{
+  font-family:'Cinzel',serif;font-size:9px;
+  letter-spacing:0.4em;text-transform:uppercase;
+  color:#904040;display:block;margin-bottom:0.6rem;
+  font-style:normal;
+}
+.rift-gate .gate-pulse{
+  display:block;margin-top:0.8rem;
+  font-size:10px;color:#7a4040;
+  animation:dotPulse 1.4s infinite;
+}
+
 /* ── RIFT HINT ── */
 .rift-hint{
   font-size:10px;color:#4a3020;font-style:italic;
@@ -651,6 +689,7 @@ let audioCtx = null, masterGain = null, currentThemeNodes = [], currentThemeName
 let lastWorldSnapshot = null, worldPollTimer = null;
 let lastRiftCount = 0, riftPollTimer = null;
 let awaitingPartnerChoice = false, myFinalChoice = null;
+let riftPromptActive = false, pendingChoices = null, activeGateEvents = null;
 const WORLD_KEY = 'chronos_world_v3';
 
 // ═══════════════════════════════════════════════
@@ -1451,6 +1490,17 @@ function startWorldPolling() {
           const partnerChoice = cur[partnerChar + '_final_choice'];
           if (partnerChoice) resolveFinalChoice(myFinalChoice, partnerChoice);
         }
+        // Check for dependency gate unlock
+        if (activeGateEvents && pendingChoices) {
+          const gateMet = activeGateEvents.some(ev => cur[ev]);
+          if (gateMet) {
+            activeGateEvents = null;
+            const gate = document.getElementById('rift-gate-block');
+            if (gate) gate.remove();
+            playSfxWorldEvent();
+            showChoices(pendingChoices);
+          }
+        }
       }
     }
   }, 1500);
@@ -1509,6 +1559,7 @@ const BRANCHES = {
   elias_watch: {
     scene: 'town_1899',
     worldEvent: 'elias_found_watch',
+    riftPrompt: 'You are holding a watch addressed to you from across a century. She sent this. Tell her what you found — the engraving, the hidden panel, the note that knows your name.',
     text: `You lift the watch. Brass, worn smooth at the edges — as if carried for years by someone who no longer has it. Inside, the engraving: "V.H. — So you will remember the way back."
 
 The hands spin backward. Thirty seconds. A minute. They stop at 11:47 — the founding hour of Blackthorn, according to the Historical Register.
@@ -1524,6 +1575,7 @@ The last line reads: "Leave something of yours at the clock tower. Third step. I
 
   elias_phonograph: {
     scene: 'town_1899',
+    riftPrompt: 'A voice from the other side of a century. She spoke to you through the static. Tell her you heard it. Tell her what the voice said.',
     text: `You lower the needle. Static at first — then something beneath it, shaped like intention. Like a voice trying to resolve itself out of a century of interference.
 
 "...the clock tower... the stone beneath the third step... leave something there for me..."
@@ -1576,6 +1628,8 @@ They are just looking from a different century.`,
   elias_tower: {
     scene: 'clock_tower',
     worldEvent: 'elias_at_tower',
+    riftGate: ['vivienne_at_tower', 'vivienne_wrote_letter', 'vivienne_left_reply'],
+    gateMessage: 'The hollow in the third step is sealed — cold stone, unyielding. Something from the other century has not yet arrived. The stone will open when she reaches it from her side.',
     text: `The clock tower is locked. You pick it — an old skill, from a less reputable life. Inside, the mechanism ticks in the dark like a second heartbeat.
 
 Third step from the bottom. You trace the seam by touch alone. Press. It shifts.
@@ -1652,6 +1706,7 @@ The Hollow Ones know about the channel.`,
   vivienne_letter: {
     scene: 'town_1999',
     worldEvent: 'vivienne_read_letter',
+    riftPrompt: 'A letter from 1899, addressed to you by name. He described hearing your voice. Tell him you found it. Tell him what it says.',
     text: `Two pages. Dense Victorian script. He writes like a man who chooses every word with the care of someone who knows words are all he has.
 
 He describes the town. The disappearance of Dr. Aldane. A theory about "doors in chronological fabric." He describes hearing a woman's voice through his phonograph — a voice he did not recognise.
@@ -1667,6 +1722,7 @@ Then: "I do not know if this letter will find you. I do not know if you are real
 
   vivienne_tape: {
     scene: 'town_1999',
+    riftPrompt: 'His voice is on your tape recorder. A man from 1899, speaking your name. Tell him you heard it. Ask him how.',
     text: `You rewind thirty seconds. Press play.
 
 Static. Wind in the eaves. Then — there, underneath everything, like a broadcast from deep underwater:
@@ -1772,6 +1828,8 @@ You seal the tube. Replace the stone. Climb into the cold air of a September aft
 
   vivienne_chamber_approach: {
     scene: 'observatory',
+    riftGate: ['elias_at_tower', 'elias_chamber_approach', 'elias_lighter'],
+    gateMessage: 'The door to the Resonance Chamber is sealed. "ENTRY REQUIRES TEMPORAL VERIFICATION." The mechanism needs the other anchor. He has not yet arrived on his side.',
     text: `The observatory dome is at the top of Harrow Hill, a twenty-minute walk through overgrown paths. In 1999 the dome itself has collapsed, the great telescope sold for scrap. But the lower levels are intact.
 
 The door is exactly where you expected it. Steel, old but strange-looking — neither Victorian nor contemporary. Engraved above it:
@@ -1910,6 +1968,7 @@ The staircase continues down. Cold air rises from below, carrying a sound like b
   elias_eleanor_trail: {
     scene: 'town_1899',
     worldEvent: 'elias_found_eleanor',
+    riftPrompt: 'Eleanor. She left to protect him. She saw all of this coming. Vivienne needs to know this name — it changes everything.',
     text: `The town archive is in the basement of the Blackthorn Library — a damp stone room smelling of foxed paper and old lamp oil. Eleanor Voss. Dr. Aldane's research partner. You find her correspondence filed under a false name, as if she knew someone would come looking.
 
 Her letters are precise, measured, and increasingly frightened.
@@ -1983,6 +2042,8 @@ You run.`,
 
   elias_descent: {
     scene: 'rift_core',
+    riftGate: ['vivienne_found_aldane', 'vivienne_saw_eleanor_mark'],
+    gateMessage: 'The staircase descends into darkness. The copper wire is cold, inert. The Rift Core needs both anchors to wake. She has not yet found her way down from the other side.',
     text: `The staircase ends.
 
 The Rift Core is not a room. It is a wound in the architecture of time — a space where the stone walls give way to something older than stone. The air hums at a frequency you feel in your teeth.
@@ -2055,6 +2116,7 @@ The Hollow Ones.`,
   vivienne_hollows: {
     scene: 'town_1999',
     worldEvent: 'vivienne_saw_hollows',
+    riftPrompt: 'The Hollow Ones. The people of Blackthorn, still walking, still going through the motions of a day that ended in 1953. He needs to know what his town becomes.',
     text: `Blackthorn is no longer empty.
 
 They walk the streets in clothes from 1953 — housedresses, fedoras, overalls with mill logos from companies that closed before you were born. A woman unlocks the door to a bakery that collapsed twenty years ago and steps inside. A man sits on a bench that is now a pile of rotted wood and opens a newspaper. A child runs past you chasing a dog that is not there.
@@ -2157,6 +2219,8 @@ Below Eleanor's name, almost hidden by a century of dust: a seam. Another trapdo
 
   vivienne_descent: {
     scene: 'rift_core',
+    riftGate: ['elias_found_eleanor', 'elias_confronted_aldane', 'elias_witnessed_pull'],
+    gateMessage: 'The passage is sealed. The air is cold and still. The Rift Core needs both anchors to wake. He has not yet found his way down from the other side.',
     text: `The staircase is carved from the bedrock. Copper wire lines every surface — thousands of strands, converging downward like veins toward a heart.
 
 The Rift Core is not a room. It is a wound in the architecture of time. The walls are part stone, part something older — a material that hums at a frequency you feel in your teeth and the backs of your eyes.
@@ -2547,9 +2611,51 @@ function narrate(text, callback) {
 }
 
 function showChoices(choices) {
+  const branch = currentBranch ? BRANCHES[currentBranch] : null;
   const container = document.getElementById('g-choices');
   const riftRow   = container.querySelector('.rift-row');
   container.innerHTML = '';
+
+  // Rift Prompt — must send a message before choices appear
+  if (branch && branch.riftPrompt && !riftPromptActive) {
+    riftPromptActive = true;
+    pendingChoices = choices;
+    const prompt = document.createElement('div');
+    prompt.className = 'rift-prompt';
+    prompt.id = 'rift-prompt-block';
+    prompt.innerHTML = '<span class="prompt-label">The Rift Stirs</span>' +
+      branch.riftPrompt +
+      '<span class="prompt-arrow">send a message to continue ↓</span>';
+    container.appendChild(prompt);
+    if (riftRow) container.appendChild(riftRow);
+    else addRiftInput();
+    return;
+  }
+
+  // Dependency Gate — must wait for partner's event
+  if (branch && branch.riftGate) {
+    const world = getWorld();
+    const gateMet = branch.riftGate.some(ev => world[ev]);
+    if (!gateMet) {
+      activeGateEvents = branch.riftGate;
+      pendingChoices = choices;
+      const gate = document.createElement('div');
+      gate.className = 'rift-gate';
+      gate.id = 'rift-gate-block';
+      gate.innerHTML = '<span class="gate-label">The Way is Sealed</span>' +
+        (branch.gateMessage || 'The way forward needs something from the other side. Talk to your partner.') +
+        '<span class="gate-pulse">waiting for the other anchor ...</span>';
+      container.appendChild(gate);
+      if (riftRow) container.appendChild(riftRow);
+      else addRiftInput();
+      return;
+    }
+  }
+
+  // Normal choices
+  riftPromptActive = false;
+  activeGateEvents = null;
+  pendingChoices = null;
 
   if (choices && choices.length) {
     const label = document.createElement('div');
@@ -2834,6 +2940,15 @@ function sendRift() {
   requestAnimationFrame(() => el.classList.add('visible'));
   story.scrollTop = story.scrollHeight;
   lastRiftCount = messages.length;
+
+  // Unlock rift prompt if active
+  if (riftPromptActive && pendingChoices) {
+    riftPromptActive = false;
+    const prompt = document.getElementById('rift-prompt-block');
+    if (prompt) prompt.remove();
+    playSfxWorldEvent();
+    showChoices(pendingChoices);
+  }
 }
 
 function startRiftPolling() {
