@@ -2152,8 +2152,8 @@ Beneath it, a note in modern handwriting — hurried, alive:
 
 "Elias — I was here. I left you my press pass so you know I'm not a ghost. There's a lighter behind it, small brass wheel on the side — turn it. The flame means I'm real. Find Aldane's chamber. I think I already have. — V."`,
     choices: [
-      { text: 'Turn the wheel on the lighter — test her claim', next: 'elias_lighter' },
-      { text: 'Leave your pocket watch in the hollow and go to the observatory', next: 'elias_chamber_approach', scene: 'observatory' },
+      { text: 'Turn the wheel on the lighter — test her claim', next: 'elias_lighter', worldEvent: 'elias_kept_watch' },
+      { text: 'Leave your pocket watch in the hollow and go to the observatory', next: 'elias_chamber_approach', scene: 'observatory', worldEvent: 'elias_left_watch' },
     ],
   },
 
@@ -2304,17 +2304,43 @@ Time is not working correctly.`,
   vivienne_tower: {
     scene: 'clock_tower',
     worldEvent: 'vivienne_at_tower',
-    text: `The clock tower stands at the north end of town, the only structure on this block that didn't fully collapse. Inside, you count the steps.
+    text: function(world) {
+      const intro = `The clock tower stands at the north end of town, the only structure on this block that didn't fully collapse. Inside, you count the steps.
 
 Third from the bottom. A seam in the stone that shouldn't exist. You press it. It shifts.
 
-Inside the hollow: a sealed brass tube, dated November 14, 1899. Inside the tube: a folded note and a small pencil sketch.
+`;
+      let middle;
+      if (world.elias_left_watch) {
+        // He chose to leave the watch — she finds it warm in the hollow
+        middle = `Inside the hollow: a sealed brass tube, dated November 14, 1899. And beside it — a brass pocket watch. Worn smooth at the edges. Still warm, somehow, as if someone set it down moments ago.
+
+He left it for you. He chose to.
+
+Inside the tube: a folded note and a small pencil sketch of your face, drawn a hundred years before you arrived.
+
+The note: "I knew you would come. I left the watch — it never belonged to me, only carried me. Take it. Take the compass too. We must find Aldane's chamber. I believe it's why we can speak at all. — E.T."`;
+      } else if (world.elias_kept_watch) {
+        // He chose to keep the watch — she finds the hollow without it
+        middle = `Inside the hollow: a sealed brass tube, dated November 14, 1899. Nothing else. He kept the watch — chose to carry it across his century rather than leave it for you.
+
+You don't yet know whether that was tenderness or unwillingness to let go.
+
+Inside the tube: a folded note and a small pencil sketch of your face, drawn a hundred years before you arrived.
+
+The note: "I knew you would come. I am keeping the watch close — it feels like the only thing tying me to this. The compass is yours. We must find Aldane's chamber. I believe it's why we can speak at all. — E.T."`;
+      } else {
+        // He hasn't reached the choice yet — fallback to the original framing
+        middle = `Inside the hollow: a sealed brass tube, dated November 14, 1899. Inside the tube: a folded note and a small pencil sketch.
 
 Of your face.
 
 Drawn a hundred years before you arrived.
 
-The note: "I knew you would come. I left my compass here for you — take it, keep it close. Wherever you go next, I'll try to find you from my side of this impossible distance. We must find Aldane's chamber. I believe it's why we can speak at all. — E.T."`,
+The note: "I knew you would come. I left my compass here for you — take it, keep it close. Wherever you go next, I'll try to find you from my side of this impossible distance. We must find Aldane's chamber. I believe it's why we can speak at all. — E.T."`;
+      }
+      return intro + middle;
+    },
     choices: [
       { text: 'Leave a reply in the tube — tell him where you\'re going', next: 'vivienne_tower_reply' },
       { text: 'Take the compass and go to the observatory now', next: 'vivienne_chamber_approach', scene: 'observatory' },
@@ -3119,6 +3145,12 @@ The distance remains. The thread holds. Two people, a century apart, talking thr
 // ═══════════════════════════════════════════════
 //  STORY ENGINE
 // ═══════════════════════════════════════════════
+// Resolve a text field that may be either a string or a function of world state.
+// This is what allows one player's choices to change the OTHER player's narration.
+function resolveText(t) {
+  return typeof t === 'function' ? t(getWorld()) : t;
+}
+
 function startStory() {
   const story   = document.getElementById('g-story');
   const choices = document.getElementById('g-choices');
@@ -3134,7 +3166,78 @@ function startStory() {
   // No ambient music during gameplay — sound effects only
   stopTheme();
   updateKeepsakes();
-  narrate(opening.text, () => showChoices(opening.choices));
+
+  // FIRST CONTACT — both players must say hello before the story starts.
+  // The Rift becomes real before the narration does.
+  const world = getWorld();
+  const myKey = currentChar + '_first_contact';
+  const partnerKey = (currentChar === 'elias' ? 'vivienne' : 'elias') + '_first_contact';
+
+  if (testMode) {
+    // Test mode: skip handshake, the auto-partner will satisfy it later
+    narrate(resolveText(opening.text), () => showChoices(opening.choices));
+    return;
+  }
+
+  if (!world[myKey] || !world[partnerKey]) {
+    showFirstContact(opening);
+    return;
+  }
+
+  narrate(resolveText(opening.text), () => showChoices(opening.choices));
+}
+
+function showFirstContact(opening) {
+  const story = document.getElementById('g-story');
+  const partnerName = currentChar === 'elias' ? 'Vivienne' : 'Elias';
+
+  // Atmospheric opening block
+  const intro = document.createElement('div');
+  intro.className = 's-block s-narrate';
+  intro.innerHTML = `<p style="font-style:italic">The fog of your century settles around you. Somewhere across an impossible distance, the other anchor has just arrived too.</p><p style="font-style:italic">The Rift is open. It is waiting for you to use it.</p>`;
+  story.appendChild(intro);
+  requestAnimationFrame(() => intro.classList.add('visible'));
+
+  // Prompt block
+  const prompt = document.createElement('div');
+  prompt.className = 'rift-prompt';
+  prompt.id = 'first-contact-prompt';
+  prompt.innerHTML =
+    '<span class="prompt-label">First Contact</span>' +
+    'Send a message to ' + partnerName + '. Anything. The story does not begin until both of you have spoken across the Rift.' +
+    '<span class="prompt-arrow">your story will begin once both have spoken</span>' +
+    '<div class="room-partner-status" id="first-contact-status" style="margin-top:1rem">Waiting for both anchors...</div>';
+  story.appendChild(prompt);
+  requestAnimationFrame(() => prompt.classList.add('visible'));
+
+  // Make sure rift input is visible
+  const choicesEl = document.getElementById('g-choices');
+  choicesEl.innerHTML = '';
+  addRiftInput();
+
+  // When this player sends, mark them as having made first contact
+  // Hook into sendRift indirectly by polling the world key
+  const checkInterval = setInterval(() => {
+    const w = getWorld();
+    const me = w[currentChar + '_first_contact'];
+    const them = w[(currentChar === 'elias' ? 'vivienne' : 'elias') + '_first_contact'];
+    const status = document.getElementById('first-contact-status');
+    if (status) {
+      if (me && them) status.textContent = 'Both have spoken. The story begins...';
+      else if (me) status.textContent = 'You spoke. Waiting for ' + partnerName + '...';
+      else if (them) status.textContent = partnerName + ' has spoken. Your turn...';
+      else status.textContent = 'Waiting for both anchors...';
+    }
+    if (me && them) {
+      clearInterval(checkInterval);
+      setTimeout(() => {
+        const fc = document.getElementById('first-contact-prompt');
+        if (fc) fc.remove();
+        intro.remove();
+        narrate(resolveText(opening.text), () => showChoices(opening.choices));
+      }, 1800);
+    }
+  }, 600);
 }
 
 function narrate(text, callback) {
@@ -3285,7 +3388,7 @@ function choose(choice) {
       const rift = choicesEl.querySelector('.rift-row');
       choicesEl.innerHTML = '';
       if (rift) choicesEl.appendChild(rift);
-      narrate(branch.text, () => showChoices(branch.choices));
+      narrate(resolveText(branch.text), () => showChoices(branch.choices));
       return;
     }
     if (choice.next === '__reach__' || choice.next === '__close__') {
@@ -3307,7 +3410,7 @@ function choose(choice) {
       const rift = choicesEl.querySelector('.rift-row');
       choicesEl.innerHTML = '';
       if (rift) choicesEl.appendChild(rift);
-      narrate(branch.text, () => showChoices(branch.choices));
+      narrate(resolveText(branch.text), () => showChoices(branch.choices));
       return;
     }
 
@@ -3320,11 +3423,18 @@ function choose(choice) {
     // Auto-save progress
     if (currentChar) saveGame();
 
-    // Fire world event
+    // Fire world event from the branch
     if (branch.worldEvent) {
       typeof branch.worldEvent === 'string'
         ? setWorld({ [branch.worldEvent]: true })
         : setWorld(branch.worldEvent);
+    }
+    // Fire world event from the chosen option (lets one player's choice
+    // shape the OTHER player's narration)
+    if (choice.worldEvent) {
+      typeof choice.worldEvent === 'string'
+        ? setWorld({ [choice.worldEvent]: true })
+        : setWorld(choice.worldEvent);
     }
 
     // Scene change
@@ -3340,7 +3450,7 @@ function choose(choice) {
     choicesEl.innerHTML = '';
     if (rift) choicesEl.appendChild(rift);
 
-    narrate(branch.text, () => showChoices(branch.choices));
+    narrate(resolveText(branch.text), () => showChoices(branch.choices));
   }, 600);
 }
 
@@ -3519,6 +3629,11 @@ function sendRift() {
     const messages = world.rift_messages || [];
     messages.push(msgObj);
     setWorld({ rift_messages: messages });
+  }
+
+  // Mark this player as having made first contact
+  if (!getWorld()[currentChar + '_first_contact']) {
+    setWorld({ [currentChar + '_first_contact']: true });
   }
 
   const story = document.getElementById('g-story');
@@ -3717,7 +3832,7 @@ function loadGame() {
   // No ambient music during gameplay — sound effects only
   stopTheme();
   updateKeepsakes();
-  narrate(branchData.text, () => showChoices(branchData.choices));
+  narrate(resolveText(branchData.text), () => showChoices(branchData.choices));
 }
 
 function clearSave() {
