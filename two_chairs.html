@@ -860,6 +860,7 @@ let lastRiftCount = 0, riftPollTimer = null;
 let awaitingPartnerChoice = false, myFinalChoice = null;
 let riftPromptActive = false, pendingChoices = null, activeGateEvents = null;
 let finalChoiceMsgCount = 0;
+let testMode = false, testTimer = null;
 const WORLD_KEY = 'chronos_world_v3';
 
 // ═══════════════════════════════════════════════
@@ -958,12 +959,131 @@ function closeHowTo() {
   document.getElementById('howto-modal').classList.remove('open');
 }
 
+function forceUnlockGate() {
+  if (!pendingChoices) return;
+  activeGateEvents = null;
+  const gate = document.getElementById('rift-gate-block');
+  if (gate) gate.remove();
+  showChoices(pendingChoices);
+}
+
+// ═══════════════════════════════════════════════
+//  TEST PARTNER MODE
+// ═══════════════════════════════════════════════
+// Activated by ?test=elias or ?test=vivienne in the URL.
+// Lets the developer experience the game from one side
+// while the other character progresses on a timer.
+function startTestPartner(playerChar) {
+  testMode = true;
+  // Create a local "test room" — no Firebase needed
+  worldCache = {};
+  const partnerChar = playerChar === 'elias' ? 'vivienne' : 'elias';
+
+  // Test partner story arc — events fire in story order on a timer
+  const partnerArc = partnerChar === 'vivienne' ? [
+    { event: 'vivienne_read_letter',     msg: 'I found your letter. The handwriting is yours.' },
+    { event: 'vivienne_wrote_letter',    msg: 'I wrote back. Left it in the post box.' },
+    { event: 'vivienne_at_tower',        msg: 'I am at the tower. The third step is here.' },
+    { event: 'vivienne_left_reply',      msg: 'I left the compass for you. Take it.' },
+    { event: 'chamber_activated',        msg: 'The chamber is awake. I can hear you clearer.' },
+    { event: 'vivienne_saw_hollows',     msg: 'There are people walking. Old clothes. They do not see me.' },
+    { event: 'vivienne_found_aldane',    msg: 'I found Aldane. Or what is left of him.' },
+    { event: 'vivienne_saw_eleanor_mark',msg: 'Eleanor. Her name is carved here. Did you know?' },
+    { event: 'vivienne_anchored',        msg: 'I am in the chair. I see you.' },
+    { event: 'vivienne_reached',         msg: 'I felt your hand. I am here.' },
+    { event: 'vivienne_at_final',        msg: 'I am at the choice. What do you want to do?' },
+  ] : [
+    { event: 'elias_found_watch',        msg: 'I have the watch. It bears your initials.' },
+    { event: 'elias_sent_voice',         msg: 'I spoke into the phonograph. Tell me you heard.' },
+    { event: 'elias_at_tower',           msg: 'I am at the tower. I left something for you.' },
+    { event: 'chamber_activated',        msg: 'The chamber wakes. The channel is open.' },
+    { event: 'elias_read_journals',      msg: 'Aldane left journals. He warned us.' },
+    { event: 'elias_found_eleanor',      msg: 'Eleanor Voss. She knew. She left to stop him.' },
+    { event: 'elias_confronted_aldane',  msg: 'I have seen him. He will not stop.' },
+    { event: 'elias_witnessed_pull',     msg: 'Something came through. The cold of it.' },
+    { event: 'elias_anchored',           msg: 'I am in the chair. I see you.' },
+    { event: 'elias_reached',            msg: 'I felt your hand. I am here.' },
+    { event: 'elias_at_final',           msg: 'I am at the choice. We must decide together.' },
+  ];
+
+  let arcIndex = 0;
+  const TICK_MS = 25000; // partner advances every ~25 seconds
+
+  function tick() {
+    if (!testMode || arcIndex >= partnerArc.length) return;
+    const step = partnerArc[arcIndex++];
+
+    // Fire the world event into local cache
+    worldCache[step.event] = true;
+    broadcastWorldChange({ [step.event]: true });
+
+    // Send a rift message from the partner
+    const story = document.getElementById('g-story');
+    if (story) {
+      const el = document.createElement('div');
+      el.className = 's-block s-rift-msg';
+      el.innerHTML = `<p>${distort(step.msg)}</p>`;
+      story.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('visible'));
+      story.scrollTop = story.scrollHeight;
+      playRiftChime();
+    }
+
+    // Re-check gates and final choice resolution
+    if (activeGateEvents && pendingChoices) {
+      const gateMet = activeGateEvents.some(ev => worldCache[ev]);
+      if (gateMet) {
+        activeGateEvents = null;
+        const gate = document.getElementById('rift-gate-block');
+        if (gate) gate.remove();
+        playSfxWorldEvent();
+        showChoices(pendingChoices);
+      }
+    }
+    if (awaitingPartnerChoice) {
+      const partnerKey = partnerChar + '_final_choice';
+      // Test partner picks the same choice the player picks (they always agree)
+      if (myFinalChoice) resolveFinalChoice(myFinalChoice, myFinalChoice);
+    }
+
+    testTimer = setTimeout(tick, TICK_MS);
+  }
+
+  // First tick after a short delay so the player gets oriented
+  testTimer = setTimeout(tick, 8000);
+}
+
+function checkTestModeURL() {
+  const params = new URLSearchParams(window.location.search);
+  const test = params.get('test');
+  if (test === 'elias' || test === 'vivienne') {
+    return test; // player will be this character
+  }
+  return null;
+}
+
 document.body.addEventListener('click', function() {
   if (!audioCtx) {
     initAudio();
     playTheme('title');
   }
 }, { once: true });
+
+// Check for test mode in URL
+(function checkTestMode() {
+  const testChar = checkTestModeURL();
+  if (testChar) {
+    testMode = true;
+    // Skip title and room screens — go straight to select with a banner
+    setTimeout(() => {
+      showScreen('select-screen');
+      const hint = document.querySelector('.select-hint');
+      if (hint) {
+        hint.innerHTML = 'Test mode · pick <strong style="color:var(--gold)">' + (testChar === 'elias' ? 'Elias' : 'Vivienne') + '</strong> · partner is automated';
+      }
+    }, 100);
+  }
+})();
 
 // ═══════════════════════════════════════════════
 //  ROOM SYSTEM
@@ -1078,6 +1198,11 @@ function selectChar(char) {
 
   currentChar = char;
   initAudio();
+
+  // If test mode is requested, start the auto-partner
+  if (testMode) {
+    startTestPartner(char);
+  }
 
   document.getElementById('g-avatar').src = char === 'elias' ? 'Images/elias.webp' : 'Images/vivienne.webp';
   document.getElementById('g-playername').textContent = char === 'elias' ? 'Elias Thorne' : 'Vivienne Harrow';
@@ -3044,23 +3169,44 @@ function showChoices(choices) {
   const riftRow   = container.querySelector('.rift-row');
   container.innerHTML = '';
 
-  // Rift Prompt — must send a message before choices appear
-  if (branch && branch.riftPrompt && !riftPromptActive) {
+  // Rift Prompt — encourages a message but no longer blocks
+  if (branch && branch.riftPrompt && !riftPromptActive && !branch._promptShown) {
     riftPromptActive = true;
+    branch._promptShown = true;
     pendingChoices = choices;
     const prompt = document.createElement('div');
     prompt.className = 'rift-prompt';
     prompt.id = 'rift-prompt-block';
     prompt.innerHTML = '<span class="prompt-label">The Rift Stirs</span>' +
       branch.riftPrompt +
-      '<span class="prompt-arrow">send a message to continue ↓</span>';
+      '<span class="prompt-arrow">share through the rift below — or continue alone</span>';
     container.appendChild(prompt);
+    // Show choices alongside the prompt — no longer blocked
+    if (choices && choices.length) {
+      const label = document.createElement('div');
+      label.className = 'c-label';
+      label.textContent = 'What do you do?';
+      container.appendChild(label);
+      choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'c-btn';
+        btn.textContent = choice.text;
+        btn.onclick = () => {
+          playSfxChoice();
+          riftPromptActive = false;
+          const p = document.getElementById('rift-prompt-block');
+          if (p) p.remove();
+          choose(choice);
+        };
+        container.appendChild(btn);
+      });
+    }
     if (riftRow) container.appendChild(riftRow);
     else addRiftInput();
     return;
   }
 
-  // Dependency Gate — must wait for partner's event
+  // Dependency Gate — show a soft hint but allow progression after a moment
   if (branch && branch.riftGate) {
     const world = getWorld();
     const gateMet = branch.riftGate.some(ev => world[ev]);
@@ -3070,9 +3216,10 @@ function showChoices(choices) {
       const gate = document.createElement('div');
       gate.className = 'rift-gate';
       gate.id = 'rift-gate-block';
-      gate.innerHTML = '<span class="gate-label">The Way is Sealed</span>' +
-        (branch.gateMessage || 'The way forward needs something from the other side. Talk to your partner.') +
-        '<span class="gate-pulse">waiting for the other anchor ...</span>';
+      gate.innerHTML = '<span class="gate-label">The Way Is Slow</span>' +
+        (branch.gateMessage || 'The way forward feels reluctant. Something on the other side has not yet arrived. Wait a moment, or push through.') +
+        '<span class="gate-pulse">waiting for the other anchor ...</span>' +
+        '<button class="howto-close" style="margin-top:1rem" onclick="forceUnlockGate()">Push through</button>';
       container.appendChild(gate);
       if (riftRow) container.appendChild(riftRow);
       else addRiftInput();
