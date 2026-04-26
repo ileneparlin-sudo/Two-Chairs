@@ -911,6 +911,7 @@ let riftPromptActive = false, pendingChoices = null, activeGateEvents = null;
 let finalChoiceMsgCount = 0;
 let testMode = false, testTimer = null;
 let debugMode = false;
+let pendingRiftMessages = [];
 const WORLD_KEY = 'chronos_world_v3';
 
 // ═══════════════════════════════════════════════
@@ -1983,6 +1984,34 @@ function playChamber() {
   shim.start(); currentThemeNodes.push(shim);
 
   masterGain.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 3);
+}
+
+function firstContactComplete() {
+  const w = getWorld();
+  return !!(w.elias_first_contact && w.vivienne_first_contact);
+}
+
+function deliverRiftMessage(msg) {
+  const story = document.getElementById('g-story');
+  if (!story) return;
+  const el = document.createElement('div');
+  el.className = 's-block s-rift-msg';
+  el.innerHTML = `<p>${distort(msg.text)}</p>`;
+  story.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('visible'));
+  story.scrollTop = story.scrollHeight;
+  playRiftChime();
+}
+
+function flushPendingRiftMessages() {
+  if (!pendingRiftMessages.length) return;
+  const queued = pendingRiftMessages.slice();
+  pendingRiftMessages = [];
+  // Deliver in the order they were sent, with a small stagger so they
+  // feel like they are arriving together as the channel resolves.
+  queued.forEach((msg, i) => {
+    setTimeout(() => deliverRiftMessage(msg), i * 400);
+  });
 }
 
 function playRiftChime() {
@@ -3462,8 +3491,11 @@ function showFirstContact(opening) {
       setTimeout(() => {
         const fc = document.getElementById('first-contact-prompt');
         if (fc) fc.remove();
+        // The Rift resolves — deliver any messages that were spoken
+        // into the void before both anchors had connected.
+        flushPendingRiftMessages();
         // Now show the choices for the opening branch
-        showChoices(opening.choices);
+        setTimeout(() => showChoices(opening.choices), 1200);
       }, 1800);
     }
   }, 600);
@@ -3936,16 +3968,14 @@ function startRiftPolling() {
     messageListener = roomRef.child('messages').on('child_added', snap => {
       if (initialLoad) return; // skip messages that existed before we started listening
       const msg = snap.val();
-      if (msg && msg.from !== currentChar) {
-        const story = document.getElementById('g-story');
-        const el    = document.createElement('div');
-        el.className = 's-block s-rift-msg';
-        el.innerHTML = `<p>${distort(msg.text)}</p>`;
-        story.appendChild(el);
-        requestAnimationFrame(() => el.classList.add('visible'));
-        story.scrollTop = story.scrollHeight;
-        playRiftChime();
+      if (!msg || msg.from === currentChar) return;
+      // If this player hasn't completed First Contact yet, buffer the message.
+      // The Rift only "resolves" when both anchors have spoken.
+      if (!firstContactComplete()) {
+        pendingRiftMessages.push(msg);
+        return;
       }
+      deliverRiftMessage(msg);
     });
     // After initial load completes, start processing new messages
     roomRef.child('messages').once('value', () => { initialLoad = false; });
@@ -3957,14 +3987,11 @@ function startRiftPolling() {
       if (messages.length > lastRiftCount) {
         messages.slice(lastRiftCount).forEach(msg => {
           if (msg.from !== currentChar) {
-            const story = document.getElementById('g-story');
-            const el    = document.createElement('div');
-            el.className = 's-block s-rift-msg';
-            el.innerHTML = `<p>${distort(msg.text)}</p>`;
-            story.appendChild(el);
-            requestAnimationFrame(() => el.classList.add('visible'));
-            story.scrollTop = story.scrollHeight;
-            playRiftChime();
+            if (!firstContactComplete()) {
+              pendingRiftMessages.push(msg);
+            } else {
+              deliverRiftMessage(msg);
+            }
           }
         });
         lastRiftCount = messages.length;
