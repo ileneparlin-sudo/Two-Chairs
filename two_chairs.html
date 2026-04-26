@@ -912,6 +912,11 @@ let finalChoiceMsgCount = 0;
 let testMode = false, testTimer = null;
 let debugMode = false;
 let pendingRiftMessages = [];
+let pendingWorldEchoes = [];
+// True only once the local player has finished prologue, finished
+// reading their opening, and completed First Contact. Until then,
+// nothing the partner does reaches the screen.
+let openingPhaseComplete = false;
 const WORLD_KEY = 'chronos_world_v3';
 
 // ═══════════════════════════════════════════════
@@ -2113,6 +2118,17 @@ function renderWorldEffects(patch) {
 }
 
 function addWorldEcho(text) {
+  // Buffer cross-timeline echoes until the local player has finished
+  // their opening sequence. They should never arrive mid-prologue or
+  // mid-opening-narration.
+  if (!openingPhaseComplete) {
+    pendingWorldEchoes.push(text);
+    return;
+  }
+  deliverWorldEcho(text);
+}
+
+function deliverWorldEcho(text) {
   const story = document.getElementById('g-story');
   if (!story) return;
   playSfxWorldEvent();
@@ -2122,6 +2138,16 @@ function addWorldEcho(text) {
   story.appendChild(el);
   requestAnimationFrame(() => el.classList.add('visible'));
   story.scrollTop = story.scrollHeight;
+}
+
+function flushPendingWorldEchoes() {
+  if (!pendingWorldEchoes.length) return;
+  const queued = pendingWorldEchoes.slice();
+  pendingWorldEchoes = [];
+  // Stagger echoes so they don't all hit at once
+  queued.forEach((text, i) => {
+    setTimeout(() => deliverWorldEcho(text), i * 600);
+  });
 }
 
 function startWorldPolling() {
@@ -3364,7 +3390,9 @@ function startStory() {
   updateKeepsakes();
 
   if (testMode || debugMode) {
-    // Test/debug mode: skip prologue and handshake
+    // Test/debug mode: skip prologue and handshake. Cross-timeline events
+    // can flow immediately.
+    openingPhaseComplete = true;
     narrate(resolveText(opening.text), () => showChoices(opening.choices));
     return;
   }
@@ -3491,11 +3519,15 @@ function showFirstContact(opening) {
       setTimeout(() => {
         const fc = document.getElementById('first-contact-prompt');
         if (fc) fc.remove();
+        // Opening phase is now complete. Cross-timeline events can flow.
+        openingPhaseComplete = true;
         // The Rift resolves — deliver any messages that were spoken
-        // into the void before both anchors had connected.
+        // into the void before both anchors had connected, and any
+        // world echoes from things the partner has done off-screen.
         flushPendingRiftMessages();
+        flushPendingWorldEchoes();
         // Now show the choices for the opening branch
-        setTimeout(() => showChoices(opening.choices), 1200);
+        setTimeout(() => showChoices(opening.choices), 1500);
       }, 1800);
     }
   }, 600);
@@ -3969,9 +4001,9 @@ function startRiftPolling() {
       if (initialLoad) return; // skip messages that existed before we started listening
       const msg = snap.val();
       if (!msg || msg.from === currentChar) return;
-      // If this player hasn't completed First Contact yet, buffer the message.
-      // The Rift only "resolves" when both anchors have spoken.
-      if (!firstContactComplete()) {
+      // Buffer if the local player is still in the opening phase
+      // (prologue, opening narration, or First Contact).
+      if (!openingPhaseComplete) {
         pendingRiftMessages.push(msg);
         return;
       }
@@ -3987,7 +4019,7 @@ function startRiftPolling() {
       if (messages.length > lastRiftCount) {
         messages.slice(lastRiftCount).forEach(msg => {
           if (msg.from !== currentChar) {
-            if (!firstContactComplete()) {
+            if (!openingPhaseComplete) {
               pendingRiftMessages.push(msg);
             } else {
               deliverRiftMessage(msg);
@@ -4048,6 +4080,9 @@ function saveGame() {
 function loadGame() {
   const save = getSave();
   if (!save) return;
+
+  // Save loaded — opening phase already done. Events can flow.
+  openingPhaseComplete = true;
 
   // Reconnect to Firebase room if save has a room code
   if (save.roomCode) {
