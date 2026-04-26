@@ -3292,6 +3292,32 @@ function resolveText(t) {
   return t;
 }
 
+// Per-character prologues — orient the player before the story begins.
+// Establishes who you are, when/where, and that you have never heard of
+// the other anchor.
+const PROLOGUES = {
+  elias: {
+    title: 'Blackthorn, Massachusetts · November 14, 1899',
+    paragraphs: [
+      'You are <em>Elias Thorne</em> — a reclusive scholar, occasional detective, amateur occultist. You live alone in your family\'s manor on the edge of town. You are thirty-eight years old.',
+      'You have not loved anyone in five years. You have not believed in anything you couldn\'t hold in your hands in twice that long.',
+      'Tonight, you are going to start believing again.',
+      'You have never heard the name <em>Vivienne Harrow</em>.',
+      'You are about to.',
+    ],
+  },
+  vivienne: {
+    title: 'Blackthorn, Massachusetts · September 1999',
+    paragraphs: [
+      'You are <em>Vivienne Harrow</em> — a journalist from Boston, alone in a town that has been abandoned since 1953. You came here chasing a cold case. You don\'t yet know that you are the case.',
+      'You are twenty-nine years old. You have not slept properly in two weeks. You have a press pass, a tape recorder, and the kind of stubborn skepticism that only a journalist who has been wrong once can develop.',
+      'Tonight, that skepticism is about to break.',
+      'You have never heard the name <em>Elias Thorne</em>.',
+      'You are about to.',
+    ],
+  },
+};
+
 function startStory() {
   const story   = document.getElementById('g-story');
   const choices = document.getElementById('g-choices');
@@ -3308,15 +3334,18 @@ function startStory() {
   stopTheme();
   updateKeepsakes();
 
-  // FIRST CONTACT — both players must say hello before the story starts.
-  // The Rift becomes real before the narration does.
+  if (testMode || debugMode) {
+    // Test/debug mode: skip prologue and handshake
+    narrate(resolveText(opening.text), () => showChoices(opening.choices));
+    return;
+  }
+
   const world = getWorld();
   const myKey = currentChar + '_first_contact';
   const partnerKey = (currentChar === 'elias' ? 'vivienne' : 'elias') + '_first_contact';
 
-  if (testMode) {
-    // Test mode: skip handshake, the auto-partner will satisfy it later
-    narrate(resolveText(opening.text), () => showChoices(opening.choices));
+  if (!world[currentChar + '_prologue_seen']) {
+    showPrologue(opening);
     return;
   }
 
@@ -3326,6 +3355,53 @@ function startStory() {
   }
 
   narrate(resolveText(opening.text), () => showChoices(opening.choices));
+}
+
+function showPrologue(opening) {
+  const story = document.getElementById('g-story');
+  const choicesEl = document.getElementById('g-choices');
+  const prologue = PROLOGUES[currentChar];
+
+  // Render the prologue as a single contemplative block
+  const block = document.createElement('div');
+  block.className = 's-block s-narrate';
+  let html = '<p style="font-family:\'Cinzel\',serif;font-size:11px;letter-spacing:0.4em;text-transform:uppercase;color:rgba(201,168,76,0.6);margin-bottom:1.5rem;font-style:normal">' + prologue.title + '</p>';
+  prologue.paragraphs.forEach(p => {
+    html += '<p>' + p + '</p>';
+  });
+  block.innerHTML = html;
+  story.appendChild(block);
+  requestAnimationFrame(() => block.classList.add('visible'));
+
+  // A single button to acknowledge and continue
+  choicesEl.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'c-btn';
+  btn.textContent = 'Continue';
+  btn.onclick = () => {
+    playSfxChoice();
+    setWorld({ [currentChar + '_prologue_seen']: true });
+    block.style.opacity = '0.4';
+    btn.disabled = true;
+    setTimeout(() => {
+      // Now move on to First Contact (or directly to story if both already done)
+      const world = getWorld();
+      const myKey = currentChar + '_first_contact';
+      const partnerKey = (currentChar === 'elias' ? 'vivienne' : 'elias') + '_first_contact';
+      if (!world[myKey] || !world[partnerKey]) {
+        showFirstContact(opening);
+      } else {
+        story.innerHTML = '';
+        choicesEl.innerHTML = '';
+        addRiftInput();
+        narrate(resolveText(opening.text), () => showChoices(opening.choices));
+      }
+    }, 600);
+  };
+  choicesEl.appendChild(btn);
+
+  // Keep rift input available
+  addRiftInput();
 }
 
 function showFirstContact(opening) {
