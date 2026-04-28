@@ -739,6 +739,28 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
   border:1px solid rgba(0,255,128,0.4);
   border-top:none;border-left:none;
 }
+/* ── BREATH / BEAT ── */
+/* Small atmospheric pause inserted between major moments. */
+.s-breath{
+  text-align:center;padding:1.2rem 0;
+  font-style:italic;color:#8a7050;
+  font-size:clamp(11px,1.2vw,13px);
+  letter-spacing:0.15em;
+  opacity:0;transition:opacity 1.5s ease;
+  line-height:1.6;
+}
+.s-breath.visible{opacity:0.7}
+.s-breath.deep{padding:2rem 0;color:#6a5240}
+
+/* Style for the partner reaction inside a world echo */
+.s-world-event .echo-reaction{
+  display:block;margin-top:0.8rem;
+  font-size:13px;color:#c89090;
+  font-style:italic;opacity:0.85;
+  border-top:1px dotted rgba(138,26,26,0.2);
+  padding-top:0.7rem;
+}
+
 .dynamic-text-badge{
   display:inline-block;
   background:rgba(255,180,0,0.25);
@@ -2084,6 +2106,19 @@ function deliverRiftMessage(msg) {
   requestAnimationFrame(() => el.classList.add('visible'));
   story.scrollTop = story.scrollHeight;
   playRiftChime();
+  // After the message lands, add a quiet reaction beat — gives the words
+  // weight rather than treating them as a chat notification.
+  if (!testMode && !debugMode) {
+    setTimeout(() => {
+      const reaction = pickBeat('rift_received');
+      const beat = document.createElement('div');
+      beat.className = 's-block s-breath';
+      beat.textContent = reaction;
+      story.appendChild(beat);
+      requestAnimationFrame(() => beat.classList.add('visible'));
+      story.scrollTop = story.scrollHeight;
+    }, 1200);
+  }
 }
 
 function flushPendingRiftMessages() {
@@ -2206,13 +2241,82 @@ function addWorldEcho(text) {
   deliverWorldEcho(text);
 }
 
+// ═══════════════════════════════════════════════
+//  BEAT SYSTEM — atmospheric pauses between moments
+// ═══════════════════════════════════════════════
+const BEAT_LINES = {
+  // Played before the player sees their choices — gives the moment to land
+  prechoice: [
+    '. . .',
+    'the air settles.',
+    'you stand very still.',
+    'a long quiet.',
+    'the room holds its breath.',
+    'you do not move for a moment.',
+    'the moment hangs.',
+  ],
+  // Played after a choice is made — the consequence arrives
+  postchoice: [
+    'and so.',
+    'you cross the small distance.',
+    'the moment closes behind you.',
+    'something shifts.',
+  ],
+  // After receiving a rift message
+  rift_received: [
+    'you read it twice.',
+    'you hold the words for a long time.',
+    'the message stays with you.',
+    'you do not look away.',
+  ],
+  // After Elias receives an echo of Vivienne's actions (her timeline acting on his)
+  elias_reaction: [
+    'you stop. you feel it before you understand it.',
+    'the room seems to lean toward the phonograph.',
+    'you do not move for a long moment.',
+    'a chill — not of fear, exactly. of presence.',
+    'somewhere a hundred years from now, a woman has just done something that touched you.',
+  ],
+  // After Vivienne receives an echo of Elias's actions
+  vivienne_reaction: [
+    'you stop walking. the fog parts a little.',
+    'your hand rests on the compass before you realize you reached for it.',
+    'the tape recorder hisses, then settles.',
+    'a chill — not of fear, exactly. of presence.',
+    'somewhere a hundred years ago, a man has just done something that reached you.',
+  ],
+};
+
+function pickBeat(category) {
+  const arr = BEAT_LINES[category];
+  if (!arr || !arr.length) return '. . .';
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function addBreath(text, opts) {
+  opts = opts || {};
+  const story = document.getElementById('g-story');
+  if (!story) return Promise.resolve();
+  const el = document.createElement('div');
+  el.className = 's-block s-breath' + (opts.deep ? ' deep' : '');
+  el.textContent = text;
+  story.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('visible'));
+  story.scrollTop = story.scrollHeight;
+  // In test/debug modes the wait is short; otherwise hold the moment.
+  const waitMs = (testMode || debugMode) ? 100 : (opts.duration || 1800);
+  return new Promise(resolve => setTimeout(resolve, waitMs));
+}
+
 function deliverWorldEcho(text) {
   const story = document.getElementById('g-story');
   if (!story) return;
   playSfxWorldEvent();
+  const reactionPool = currentChar === 'elias' ? 'elias_reaction' : 'vivienne_reaction';
+  const reaction = pickBeat(reactionPool);
   const el = document.createElement('div');
   el.className = 's-block s-world-event';
-  el.innerHTML = `<p>${text}</p>`;
+  el.innerHTML = '<p>' + text + '</p><span class="echo-reaction">' + reaction + '</span>';
   story.appendChild(el);
   requestAnimationFrame(() => el.classList.add('visible'));
   story.scrollTop = story.scrollHeight;
@@ -3657,6 +3761,27 @@ function narrate(text, callback) {
 }
 
 function showChoices(choices) {
+  // Internal renderer that does the actual work
+  const renderNow = () => _renderChoices(choices);
+  // Add a brief atmospheric beat before choices appear so the moment can land.
+  // Skip in test/debug or if there are no choices.
+  if (!testMode && !debugMode && choices && choices.length && currentBranch !== null) {
+    const story = document.getElementById('g-story');
+    if (story) {
+      const beat = document.createElement('div');
+      beat.className = 's-block s-breath';
+      beat.textContent = pickBeat('prechoice');
+      story.appendChild(beat);
+      requestAnimationFrame(() => beat.classList.add('visible'));
+      story.scrollTop = story.scrollHeight;
+      setTimeout(renderNow, 1500);
+      return;
+    }
+  }
+  renderNow();
+}
+
+function _renderChoices(choices) {
   const branch = currentBranch ? BRANCHES[currentBranch] : null;
   const container = document.getElementById('g-choices');
   const riftRow   = container.querySelector('.rift-row');
@@ -3755,6 +3880,20 @@ function choose(choice) {
   requestAnimationFrame(() => echo.classList.add('visible'));
   story.scrollTop = story.scrollHeight;
 
+  // Brief weight-of-decision beat after a choice (skip for special routes)
+  const isSpecial = ['__restart__', '__switch__', '__act2__', '__act3__', '__reach__', '__close__', '__between__'].includes(choice.next);
+  const postChoiceMs = (testMode || debugMode || isSpecial) ? 600 : 1400;
+  if (!testMode && !debugMode && !isSpecial) {
+    setTimeout(() => {
+      const beat = document.createElement('div');
+      beat.className = 's-block s-breath';
+      beat.textContent = pickBeat('postchoice');
+      story.appendChild(beat);
+      requestAnimationFrame(() => beat.classList.add('visible'));
+      story.scrollTop = story.scrollHeight;
+    }, 600);
+  }
+
   setTimeout(() => {
     if (choice.next === '__restart__') {
       worldCache = {};
@@ -3841,7 +3980,7 @@ function choose(choice) {
     if (rift) choicesEl.appendChild(rift);
 
     narrate(resolveText(branch.text), () => showChoices(branch.choices));
-  }, 600);
+  }, postChoiceMs);
 }
 
 // ═══════════════════════════════════════════════
