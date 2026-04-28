@@ -360,6 +360,15 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
   padding:0.6rem 0 0.2rem;
   border-top:1px solid rgba(138,26,26,0.15);
   margin-top:0.4rem;
+  transition:opacity 0.6s ease;
+}
+/* When choices are visible and no rift-prompt is active, the rift box
+   is secondary — still usable, but visually quieter. */
+.g-choices:has(.c-btn):not(:has(.rift-prompt)) .rift-row{
+  opacity:0.55;
+}
+.g-choices:has(.c-btn):not(:has(.rift-prompt)) .rift-row:focus-within{
+  opacity:1;
 }
 .rift-pre{
   font-family:'Cinzel',serif;font-size:9px;
@@ -3787,7 +3796,9 @@ function _renderChoices(choices) {
   const riftRow   = container.querySelector('.rift-row');
   container.innerHTML = '';
 
-  // Rift Prompt — encourages a message but no longer blocks
+  // Rift Prompt — blocks choices until the player either sends a message
+  // OR explicitly clicks "Continue without sharing."
+  // This gives the moment ONE clear action at a time: type, or skip.
   if (branch && branch.riftPrompt && !riftPromptActive && !branch._promptShown) {
     riftPromptActive = true;
     branch._promptShown = true;
@@ -3797,28 +3808,24 @@ function _renderChoices(choices) {
     prompt.id = 'rift-prompt-block';
     prompt.innerHTML = '<span class="prompt-label">The Rift Stirs</span>' +
       branch.riftPrompt +
-      '<span class="prompt-arrow">share through the rift below — or continue alone</span>';
+      '<span class="prompt-arrow">type a message in the rift below — or continue without sharing</span>';
     container.appendChild(prompt);
-    // Show choices alongside the prompt — no longer blocked
-    if (choices && choices.length) {
-      const label = document.createElement('div');
-      label.className = 'c-label';
-      label.textContent = 'What do you do?';
-      container.appendChild(label);
-      choices.forEach(choice => {
-        const btn = document.createElement('button');
-        btn.className = 'c-btn';
-        btn.textContent = choice.text;
-        btn.onclick = () => {
-          playSfxChoice();
-          riftPromptActive = false;
-          const p = document.getElementById('rift-prompt-block');
-          if (p) p.remove();
-          choose(choice);
-        };
-        container.appendChild(btn);
-      });
-    }
+
+    // Single skip button — no choices yet. Choices appear after one of:
+    // (1) sendRift() unlocks this prompt, (2) this skip is clicked.
+    const skipBtn = document.createElement('button');
+    skipBtn.className = 'c-btn';
+    skipBtn.style.opacity = '0.7';
+    skipBtn.textContent = 'Continue without sharing';
+    skipBtn.onclick = () => {
+      playSfxChoice();
+      riftPromptActive = false;
+      const p = document.getElementById('rift-prompt-block');
+      if (p) p.remove();
+      _renderChoices(pendingChoices);
+    };
+    container.appendChild(skipBtn);
+
     if (riftRow) container.appendChild(riftRow);
     else addRiftInput();
     return;
