@@ -2431,7 +2431,9 @@ Not music. A voice. A woman's. Fragmented, arriving from somewhere impossibly fa
 
 "...Elias... the observatory... they know what happened here..."
 
-Then silence. The needle stills. On your desk: a brass pocket watch you found this morning, addressed to you in a hand you don't recognise. The name engraved inside — Vivienne Harrow — means nothing to you.
+Then silence. The needle stills. On your desk: a brass pocket watch you found this morning, addressed to you in a hand you don't recognise. Inside, two initials engraved in old brass: V.H.
+
+The letters mean nothing to you.
 
 Yet.`,
       choices: [
@@ -3685,13 +3687,13 @@ function showFirstContact(opening) {
   const prompts = {
     elias: {
       label: 'Speak Into the Phonograph',
-      body: 'A voice came through the horn moments ago. Whoever spoke is somewhere far — somewhere not here. You do not know if the channel works both ways. There is only one way to find out.',
-      cta: 'speak into the rift below — anything will do',
+      body: 'A voice came through the horn moments ago — a woman\'s voice. You only have her initials. She does not know your name. Tell her who you are. Tell her what you found.',
+      cta: 'introduce yourself in the rift below',
     },
     vivienne: {
       label: 'Press Record',
-      body: 'A man\'s voice came through your tape recorder, speaking your name from a place that is not here. You do not know if anyone will hear you back. There is only one way to find out.',
-      cta: 'speak into the rift below — anything will do',
+      body: 'A man\'s voice came through your tape recorder, speaking your name. You only have his initials. He does not know what you look like, where you are, or why he can hear you. Tell him who you are. Tell him what you found.',
+      cta: 'introduce yourself in the rift below',
     },
   };
   const p = prompts[currentChar];
