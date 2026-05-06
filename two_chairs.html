@@ -604,12 +604,15 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
 }
 
 /* ── ROOM SCREEN ── */
-#room-screen,#intro-screen{background:rgba(5,3,2,0.93)}
+#room-screen{background:rgba(5,3,2,0.93)}
+/* Intro screen: solid center panel, scene imagery on the sides */
+#intro-screen{background:transparent}
 #intro-screen .room-wrap{
-  background:rgba(8,5,3,0.95);
+  background:rgba(5,3,2,0.985);
   border:1px solid rgba(201,168,76,0.18);
   padding:2.5rem 2.2rem;
-  box-shadow:0 0 80px 20px rgba(0,0,0,0.6);
+  box-shadow:0 0 120px 40px rgba(5,3,2,0.85);
+  max-width:640px;
 }
 #intro-screen #intro-text p{
   text-shadow:0 1px 3px rgba(0,0,0,0.85);
