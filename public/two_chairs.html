@@ -930,7 +930,7 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
 <div class="screen hidden" id="game-screen">
   <div class="game-shell">
     <header class="g-header">
-      <div class="g-logo">Two Chairs</div>
+      <div class="g-logo">Two Chairs<span id="g-roomcode" style="display:none;margin-left:0.8rem;font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.3em;color:var(--gold);padding:2px 8px;border:1px solid rgba(201,168,76,0.3);cursor:pointer" onclick="copyRoomCode()" title="Click to copy"></span></div>
       <div class="g-player">
         <img class="g-avatar" id="g-avatar" src="" alt="">
         <div>
@@ -1103,6 +1103,20 @@ function showClosingCard(ending) {
   story.appendChild(card);
   requestAnimationFrame(() => card.classList.add('visible'));
   story.scrollTop = story.scrollHeight;
+}
+
+function copyRoomCode() {
+  if (!roomCode) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(roomCode).then(() => {
+      const rc = document.getElementById('g-roomcode');
+      if (rc) {
+        const original = rc.textContent;
+        rc.textContent = 'copied';
+        setTimeout(() => { rc.textContent = original; }, 1200);
+      }
+    }).catch(() => {});
+  }
 }
 
 function skipFirstContact() {
@@ -1469,6 +1483,17 @@ function selectChar(char) {
 
   currentChar = char;
   initAudio();
+
+  // Show the room code in the game header so partners can rejoin
+  // if either of them gets disconnected.
+  if (roomCode) {
+    const rc = document.getElementById('g-roomcode');
+    if (rc) {
+      rc.textContent = roomCode;
+      rc.style.display = '';
+      rc.title = 'Room ' + roomCode + ' — click to copy';
+    }
+  }
 
   // If test mode is requested, start the auto-partner
   if (testMode) {
@@ -4365,6 +4390,16 @@ function loadGame() {
   document.getElementById('g-avatar').src = currentChar === 'elias' ? 'Images/elias.webp' : 'Images/vivienne.webp';
   document.getElementById('g-playername').textContent = save.charName;
   document.getElementById('g-era').textContent = currentChar === 'elias' ? 'Blackthorn · 1899' : 'Blackthorn · 1999';
+
+  // Show the room code in the header on reconnect too
+  if (roomCode) {
+    const rc = document.getElementById('g-roomcode');
+    if (rc) {
+      rc.textContent = roomCode;
+      rc.style.display = '';
+      rc.title = 'Room ' + roomCode + ' — click to copy';
+    }
+  }
 
   if (save.world.rift_core_active) {
     document.getElementById('world-badge').textContent = 'The Rift Core is open';
