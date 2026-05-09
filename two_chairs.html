@@ -834,7 +834,7 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
     <div class="title-year">1899 &nbsp;·&nbsp; 1999</div>
     <div class="rift-divider"></div>
     <div class="title-tagline">"Time isn't broken.<br>It's bleeding."</div>
-    <div style="font-family:'Cinzel',serif;font-size:clamp(9px,1.1vw,11px);letter-spacing:0.5em;color:rgba(201,168,76,0.4);text-transform:uppercase;margin-top:1.5rem;opacity:0;animation:fadeIn 1s ease 2.6s forwards">A game for two, played apart</div>
+    <div style="font-family:'Cinzel',serif;font-size:clamp(9px,1.1vw,11px);letter-spacing:0.5em;color:rgba(201,168,76,0.4);text-transform:uppercase;margin-top:1.5rem;opacity:0;animation:fadeIn 1s ease 2.6s forwards">A cooperative story for two</div>
     <button class="enter-btn" onclick="showRoomCreate()">Create a Room</button>
     <button class="enter-btn" onclick="showRoomJoin()" style="margin-top:0.8rem;animation-delay:3.2s">Join a Room</button>
     <div><button class="howto-link" onclick="openHowTo()">How to Play</button></div>
@@ -845,26 +845,25 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
 <div class="howto-backdrop" id="howto-modal">
   <div class="howto-modal">
     <h2>How to Play</h2>
-    <div class="howto-sub">A game for two, played apart</div>
+    <div class="howto-sub">A cooperative story for two</div>
 
     <h3>The Setup</h3>
-    <p>Two Chairs is a narrative game for <span class="howto-highlight">two players</span>, each on their own device. You can play together in the same room or across the world.</p>
+    <p>Two Chairs is a cooperative narrative game for <span class="howto-highlight">two players</span>, each on their own device. Sit beside each other, or get on a call together — you'll talk while you play.</p>
     <ol>
-      <li>One of you clicks <span class="howto-highlight">Create a Room</span> and shares the 4-letter code with the other.</li>
+      <li>One of you clicks <span class="howto-highlight">Create a Room</span> and shares the 4-letter code.</li>
       <li>The other clicks <span class="howto-highlight">Join a Room</span> and enters that code.</li>
       <li>Each of you picks a different character — Elias (1899) or Vivienne (1999).</li>
     </ol>
 
     <h3>Playing Together</h3>
-    <p>You each read your own story and make your own choices. You're not taking turns — you play simultaneously, at your own pace.</p>
-    <p>At the bottom of the screen is the <span class="howto-highlight">Rift</span>: type there to send a message to your partner across time. Their messages arrive distorted, as if transmitted across a century.</p>
-    <p>When your partner does something meaningful, you'll feel an echo in your own story. Sometimes the game will pause and ask you to talk before continuing. Sometimes your path will be sealed until your partner reaches a certain point. Talk. Share what you find.</p>
+    <p>You each read your own story and make your own choices. <span class="howto-highlight">Talk to each other out loud</span> — through the call or in the room. The game will not give you a chat box. The conversation is yours.</p>
+    <p>What each of you chooses appears in the other's century. When Elias does something in 1899, Vivienne feels it in 1999. When Vivienne does something, Elias feels it. You will sometimes need to share what you found before either of you can move forward.</p>
 
     <h3>The Ending</h3>
-    <p>At the end, you'll both face the same final choice. Both of you must pick the same option for the ending to register. If you disagree, talk it through and decide together.</p>
+    <p>At the end, you both face the same final choice. Both of you must pick the same option for the ending to register. Talk it through and decide together.</p>
 
     <h3>Time Required</h3>
-    <p>About 60–90 minutes, total. You can save at any time and return later — click Save in the game header.</p>
+    <p>About 60–90 minutes, total. You can save at any time from the game header.</p>
 
     <button class="howto-close" onclick="closeHowTo()">Begin</button>
   </div>
@@ -884,13 +883,12 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
       <p style="margin-bottom:1.1rem;text-align:left">Not through choice. Not through any plan either of them could have made.</p>
       <p style="margin-bottom:1.1rem;text-align:left">Through something older than choice — a crack in the architecture of time, opened by a man who wanted to find someone he loved, and who mistook longing for permission.</p>
       <p style="margin-bottom:1.1rem;text-align:left">You are about to play across that crack. One of you will be in 1899. One of you will be in 1999. You will know the other only through fragments — a voice through a phonograph, a letter postmarked impossibly, a watch with the wrong name engraved inside.</p>
-      <p style="margin-bottom:1.1rem;text-align:left">The Rift is the channel between you. It is slow. It is strange. It is the only way you have to reach across.</p>
+      <p style="margin-bottom:1.1rem;text-align:left">The Rift is between them. It is slow. It is strange. It carries voices, objects, weight — but not your words. Your words are yours. Talk to each other. Out loud. Side by side, or across a phone line.</p>
       <div style="text-align:center;font-style:italic;color:#d4b888;font-size:clamp(13px,1.4vw,15px);line-height:1.9;margin-top:2rem;padding-top:1.5rem;border-top:1px solid rgba(201,168,76,0.2)">
-        <p style="margin-bottom:0.4rem">When you speak through the Rift, you are not chatting.</p>
-        <p style="margin-bottom:0.4rem">You are speaking to a voice you do not know,</p>
-        <p style="margin-bottom:0.4rem">across a century you do not belong to.</p>
-        <p style="margin-bottom:0.4rem">Speak as if the words might not arrive.</p>
-        <p>Ask the things that matter.</p>
+        <p style="margin-bottom:0.4rem">Two of you. Two screens.</p>
+        <p style="margin-bottom:0.4rem">One story you will shape together.</p>
+        <p style="margin-bottom:0.4rem">What each of you chooses</p>
+        <p>will appear in the other's century.</p>
       </div>
     </div>
     <button class="enter-btn" onclick="finishIntro()" style="margin-top:1rem">Continue to Character Select</button>
@@ -939,6 +937,7 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
         </div>
       </div>
       <div style="display:flex;gap:0.6rem;align-items:center">
+        <div id="partner-indicator" style="display:none;font-family:'Cinzel',serif;font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:rgba(201,168,76,0.55);padding:0.25rem 0.6rem;border:1px solid rgba(201,168,76,0.2)" title="Your partner's progress">—</div>
         <button class="g-save-btn" onclick="openSaveModal()">Save</button>
         <div class="world-state-badge" id="world-badge">The Rift is closed</div>
       </div>
@@ -1180,8 +1179,8 @@ function startTestPartner(playerChar) {
   ];
 
   let arcIndex = 0;
+  let partnerPaused = false;
   const TICK_MS = 60000; // partner advances every minute by default
-  window._partnerPaused = false;
 
   // Inject a pause/resume control into the page so the tester can
   // hold the partner while reading without losing the partner state.
@@ -1191,16 +1190,16 @@ function startTestPartner(playerChar) {
     ctrl.style.cssText = 'position:fixed;bottom:1rem;right:1rem;z-index:51;font-family:Cinzel,serif;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;background:rgba(0,0,0,0.85);color:#7fffaf;border:1px solid rgba(0,255,128,0.4);padding:8px 14px;cursor:pointer';
     ctrl.textContent = 'Pause Partner';
     ctrl.onclick = () => {
-      window._partnerPaused = !window._partnerPaused;
-      ctrl.textContent = window._partnerPaused ? 'Resume Partner' : 'Pause Partner';
-      ctrl.style.color = window._partnerPaused ? '#ffd060' : '#7fffaf';
+      partnerPaused = !partnerPaused;
+      ctrl.textContent = partnerPaused ? 'Resume Partner' : 'Pause Partner';
+      ctrl.style.color = partnerPaused ? '#ffd060' : '#7fffaf';
     };
     document.body.appendChild(ctrl);
   }
 
   function tick() {
     // If paused, just reschedule and check again in a few seconds.
-    if (window._partnerPaused) {
+    if (partnerPaused) {
       testTimer = setTimeout(tick, 3000);
       return;
     }
@@ -1537,6 +1536,7 @@ function selectChar(char) {
   showScreen('game-screen');
   startWorldPolling();
   startRiftPolling();
+  updatePartnerIndicator();
   startStory();
 }
 
@@ -2248,6 +2248,50 @@ function broadcastWorldChange(patch) {
   const ping = document.getElementById('shared-ping');
   if (ping) { ping.classList.add('show'); setTimeout(() => ping.classList.remove('show'), 2500); }
   renderWorldEffects(patch);
+  updatePartnerIndicator();
+}
+
+// Maps the partner's recent world events to a one-line status shown
+// in the game header. Lets each player see, at a glance, where the
+// other one is in their timeline.
+function updatePartnerIndicator() {
+  const el = document.getElementById('partner-indicator');
+  if (!el || !currentChar) return;
+  const w = getWorld();
+  const partner = currentChar === 'elias' ? 'vivienne' : 'elias';
+  // Order matters — list goes from latest to earliest. First match wins.
+  const milestones = currentChar === 'elias' ? [
+    ['vivienne_anchored',          'She is in the chair.'],
+    ['vivienne_saw_eleanor_mark',  'She found Eleanor\'s name.'],
+    ['vivienne_found_aldane',      'She found Aldane.'],
+    ['vivienne_saw_hollows',       'She is among the Hollow Ones.'],
+    ['vivienne_at_final',          'She is at the choice.'],
+    ['vivienne_left_reply',        'She left a reply at the tower.'],
+    ['vivienne_at_tower',          'She is at the tower.'],
+    ['vivienne_wrote_letter',      'She wrote you back.'],
+    ['vivienne_read_letter',       'She is reading your letter.'],
+    ['vivienne_first_contact',     'She is here.'],
+  ] : [
+    ['elias_anchored',         'He is in the chair.'],
+    ['elias_witnessed_pull',   'He saw Aldane open the Rift.'],
+    ['elias_confronted_aldane','He found Aldane.'],
+    ['elias_found_eleanor',    'He found Eleanor\'s letters.'],
+    ['elias_read_journals',    'He is reading the journals.'],
+    ['elias_at_final',         'He is at the choice.'],
+    ['elias_at_tower',         'He is at the tower.'],
+    ['elias_sent_voice',       'He spoke into the phonograph.'],
+    ['elias_found_watch',      'He has the watch.'],
+    ['elias_first_contact',    'He is here.'],
+  ];
+  for (let i = 0; i < milestones.length; i++) {
+    if (w[milestones[i][0]]) {
+      el.textContent = milestones[i][1];
+      el.style.display = '';
+      return;
+    }
+  }
+  el.textContent = 'Waiting for ' + (partner === 'elias' ? 'Elias' : 'Vivienne') + '...';
+  el.style.display = '';
 }
 
 function renderWorldEffects(patch) {
@@ -3727,23 +3771,23 @@ function showPrologue(opening) {
 
 function showFirstContact(opening) {
   const story = document.getElementById('g-story');
+  const choicesEl = document.getElementById('g-choices');
 
-  // Diegetic First Contact prompt — frames the action in-story.
-  // Each character's prompt matches what they just experienced in the opening.
+  // Synchronous co-op: First Contact is just a 'both ready' handshake.
+  // The fiction stays — voice through phonograph / tape, anchors meeting —
+  // but we no longer ask the player to type anything. They just confirm
+  // they're ready, and the story begins once the partner does the same.
   const prompts = {
     elias: {
-      label: 'Speak Into the Phonograph',
-      body: 'A voice came through the horn moments ago — a woman\'s voice. You only have her initials. She does not know your name. Tell her who you are. Tell her what you found.',
-      cta: 'introduce yourself in the rift below',
+      label: 'The Phonograph',
+      body: 'A voice came through the horn moments ago — a woman\'s voice. You do not yet know her. She does not yet know you. But you can both feel that something has opened.',
     },
     vivienne: {
-      label: 'Press Record',
-      body: 'A man\'s voice came through your tape recorder, speaking your name. You only have his initials. He does not know what you look like, where you are, or why he can hear you. Tell him who you are. Tell him what you found.',
-      cta: 'introduce yourself in the rift below',
+      label: 'The Tape Recorder',
+      body: 'A man\'s voice came through the static, speaking your name. You do not yet know him. He does not yet know you. But you can both feel that something has opened.',
     },
   };
   const p = prompts[currentChar];
-  const partnerName = currentChar === 'elias' ? 'the other side' : 'the other side';
 
   const prompt = document.createElement('div');
   prompt.className = 'rift-prompt';
@@ -3751,54 +3795,60 @@ function showFirstContact(opening) {
   prompt.innerHTML =
     '<span class="prompt-label">' + p.label + '</span>' +
     p.body +
-    '<span class="prompt-arrow">' + p.cta + '</span>' +
-    '<div class="room-partner-status" id="first-contact-status" style="margin-top:1rem">listening for a voice on the other side...</div>' +
-    '<button class="howto-close" id="fc-skip" style="margin-top:1rem;display:none" onclick="skipFirstContact()">Continue without your partner</button>';
+    '<div class="room-partner-status" id="first-contact-status" style="margin-top:1.2rem">waiting for the other anchor...</div>';
   story.appendChild(prompt);
   requestAnimationFrame(() => prompt.classList.add('visible'));
   story.scrollTop = story.scrollHeight;
 
-  // After 90 seconds of waiting, offer an escape hatch in case the partner
-  // never arrives. Lets a solo player keep going.
+  // A single button: 'I am ready.' Click marks first_contact for this player.
+  choicesEl.innerHTML = '';
+  const readyBtn = document.createElement('button');
+  readyBtn.className = 'c-btn';
+  readyBtn.textContent = 'I am ready';
+  readyBtn.onclick = () => {
+    playSfxChoice();
+    setWorld({ [currentChar + '_first_contact']: true });
+    readyBtn.disabled = true;
+    readyBtn.textContent = 'You are ready.';
+    readyBtn.style.opacity = '0.6';
+  };
+  choicesEl.appendChild(readyBtn);
+
+  // After 90s offer a solo skip in case the partner never connects.
   setTimeout(() => {
-    const skip = document.getElementById('fc-skip');
-    if (skip) skip.style.display = '';
+    if (document.getElementById('first-contact-prompt')) {
+      const skip = document.createElement('button');
+      skip.className = 'c-btn';
+      skip.style.opacity = '0.6';
+      skip.textContent = 'Continue without your partner';
+      skip.onclick = skipFirstContact;
+      choicesEl.appendChild(skip);
+    }
   }, 90000);
 
-  // Make sure rift input is visible
-  const choicesEl = document.getElementById('g-choices');
-  choicesEl.innerHTML = '';
-  addRiftInput();
-
-  // Poll for both-spoken state
+  // Poll for both-ready state
   const checkInterval = setInterval(() => {
     const w = getWorld();
     const me = w[currentChar + '_first_contact'];
     const them = w[(currentChar === 'elias' ? 'vivienne' : 'elias') + '_first_contact'];
     const status = document.getElementById('first-contact-status');
     if (status) {
-      if (me && them) status.textContent = 'A voice answers. The channel is open.';
-      else if (me) status.textContent = 'you spoke. waiting for an answer...';
-      else if (them) status.textContent = 'something on the other side has spoken. answer it...';
-      else status.textContent = 'listening for a voice on the other side...';
+      if (me && them) status.textContent = 'Both anchors are present. The channel is open.';
+      else if (me) status.textContent = 'you are ready. waiting for the other side...';
+      else if (them) status.textContent = 'the other anchor is ready. confirm when you are.';
+      else status.textContent = 'waiting for the other anchor...';
     }
     if (me && them) {
       clearInterval(checkInterval);
       setTimeout(() => {
         const fc = document.getElementById('first-contact-prompt');
         if (fc) fc.remove();
-        // Opening phase is now complete. Cross-timeline events can flow.
         openingPhaseComplete = true;
-        // The Rift resolves — deliver any messages that were spoken
-        // into the void before both anchors had connected, and any
-        // world echoes from things the partner has done off-screen.
-        flushPendingRiftMessages();
         flushPendingWorldEchoes();
-        // Now show the choices for the opening branch
-        setTimeout(() => showChoices(opening.choices), 1500);
-      }, 1800);
+        setTimeout(() => showChoices(opening.choices), 1200);
+      }, 1500);
     }
-  }, 600);
+  }, 500);
 }
 
 function narrate(text, callback) {
@@ -3865,10 +3915,11 @@ function _renderChoices(choices) {
   const riftRow   = container.querySelector('.rift-row');
   container.innerHTML = '';
 
-  // Rift Prompt — blocks choices until the player either sends a message
-  // OR explicitly clicks "Continue without sharing."
-  // This gives the moment ONE clear action at a time: type, or skip.
-  if (branch && branch.riftPrompt && !riftPromptActive && !branch._promptShown) {
+  // Rift Prompt — DISABLED. Chatbox removed; partners communicate out
+  // of game. Originally these gated choices until a message was sent.
+  // Now we just skip the gating logic entirely. The riftPrompt fields
+  // on individual branches remain in the data but have no effect.
+  if (false && branch && branch.riftPrompt && !riftPromptActive && !branch._promptShown) {
     riftPromptActive = true;
     branch._promptShown = true;
     pendingChoices = choices;
@@ -4197,21 +4248,11 @@ function showFinalChoiceButtons() {
 }
 
 function addRiftInput() {
-  const choices = document.getElementById('g-choices');
-  if (choices.querySelector('.rift-row')) return;
-  const row = document.createElement('div');
-  row.className = 'rift-row';
-  const showHint = !localStorage.getItem('rift_hint_seen');
-  row.innerHTML = `
-    ${showHint ? '<div class="rift-hint">Type here to send a message to your partner across the Rift</div>' : ''}
-    <span class="rift-pre">Rift</span>
-    <input class="rift-in" id="rift-input"
-      placeholder="transmit across the Rift..." maxlength="200"
-      onkeydown="if(event.key==='Enter')sendRift()"
-      onfocus="localStorage.setItem('rift_hint_seen','1');var h=this.parentElement.querySelector('.rift-hint');if(h)h.remove()">
-    <button class="rift-go" onclick="sendRift()">Send</button>
-  `;
-  choices.appendChild(row);
+  // Chatbox removed. Two Chairs is now a synchronous co-op game —
+  // partners communicate out-of-game (call / video / in-person).
+  // The Rift is the premise of the story, not a chat channel.
+  // This function is a no-op so existing call sites do not break.
+  return;
 }
 
 function distort(text) {
@@ -4223,6 +4264,10 @@ function distort(text) {
 }
 
 function sendRift() {
+  // Chatbox removed — function kept as a no-op stub so any leftover
+  // event handlers do not throw. The original implementation follows
+  // for reference but is unreachable.
+  return;
   const input = document.getElementById('rift-input');
   if (!input || !input.value.trim()) return;
   const msg = input.value.trim();

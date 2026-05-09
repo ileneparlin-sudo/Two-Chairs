@@ -211,7 +211,9 @@ assert(html.includes('id="g-choices"'), 'Choices container exists');
 assert(html.includes('id="keepsake-line"'), 'Keepsake line exists');
 assert(html.includes('id="world-badge"'), 'World badge exists');
 assert(html.includes('id="particle-canvas"'), 'Particle canvas exists');
-assert(html.includes('continue-btn'), 'Continue button exists');
+// Continue button on title screen was removed by design — save/load
+// happens in the in-game modal.
+assert(!html.includes('id="continue-btn"'), 'Title-screen Continue button removed');
 assert(html.includes('<title>Two Chairs</title>'), 'Page title is Two Chairs');
 
 // ═══════════════════════════════════════════════
