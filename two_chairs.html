@@ -2562,7 +2562,7 @@ const BRANCHES = {
 
   elias_watch: {
     scene: 'town_1899',
-    worldEvent: 'elias_found_watch',
+    worldEvent: { elias_found_watch: true, elias_anchor_object: true },
     riftPrompt: 'You are holding a watch addressed to you from across a century. She sent this. Tell her what you found — the engraving, the hidden panel, the note that knows your name.',
     text: `You lift the watch. Brass, worn smooth at the edges — as if carried for years by someone who no longer has it. Inside, the engraving: "V.H. — So you will remember the way back."
 
@@ -2579,6 +2579,7 @@ The last line reads: "Leave something of yours at the clock tower. Third step. I
 
   elias_phonograph: {
     scene: 'town_1899',
+    worldEvent: 'elias_anchor_voice',
     riftPrompt: 'A voice from the other side of a century. She spoke to you through the static. Tell her you heard it. Tell her what the voice said.',
     text: `You lower the needle. Static at first — then something beneath it, shaped like intention. Like a voice trying to resolve itself out of a century of interference.
 
@@ -2614,6 +2615,7 @@ She has always heard you.`,
 
   elias_observatory: {
     scene: 'observatory',
+    worldEvent: 'elias_anchor_sight',
     text: `Through the rain-streaked glass, the dome of Harrow Hill Observatory is dark — as it has been since Dr. Aldane vanished three weeks ago. The police say he simply left.
 
 You know better.
@@ -2634,19 +2636,53 @@ They are just looking from a different century.`,
     worldEvent: 'elias_at_tower',
     riftGate: ['vivienne_at_tower', 'vivienne_wrote_letter', 'vivienne_left_reply'],
     gateMessage: 'The hollow in the third step is sealed — cold stone, unyielding. Something from the other century has not yet arrived. The stone will open when she reaches it from her side.',
-    text: `The clock tower is locked. You pick it — an old skill, from a less reputable life. Inside, the mechanism ticks in the dark like a second heartbeat.
+    text: function(world) {
+      const opening = `The clock tower is locked. You pick it — an old skill, from a less reputable life. Inside, the mechanism ticks in the dark like a second heartbeat.
 
 Third step from the bottom. You trace the seam by touch alone. Press. It shifts.
 
 The hollow is empty.
 
-Recently empty. The stone is still warm. And on the floor: a small rectangular object — smooth, pale plastic, stamped with the words PRESS / V. HARROW. Her image is on it. A photograph. She is wearing that coat.
+Recently empty. The stone is still warm.`;
+
+      // What she left depends on what she chose to do first.
+      let contents;
+      if (world.viv_anchor_voice) {
+        contents = `
+
+On the stone: a small reel of magnetic tape, neatly wound, with a paper label in modern hand: "Elias — play this. — V."
+
+You have no machine to play it on. You hold it anyway. The tape is warm. Beneath it, a note on a torn page:
+
+"I came to the tower because the voice on my tape said to. I have your initials. I do not yet have your face. The tape is for you to keep — proof that I am here, on the other side of a hundred years of silence. We must find Aldane's chamber. I think I already have. — V."`;
+      } else if (world.viv_anchor_word) {
+        contents = `
+
+On the stone: a sealed letter, the envelope thick, addressed to you in modern handwriting. The seal is bright red wax. The paper inside is heavy.
+
+"Elias — your letter found me. I read it three times. I do not yet understand how I know your handwriting, but I do. I am writing this in the post office, on the desk where I found you. I am sending it back through whatever opens between us. Find Aldane's chamber. I think I already have. — Vivienne (V.H.)"`;
+      } else if (world.viv_anchor_object) {
+        contents = `
+
+On the stone: her press pass — a small rectangular object, smooth pale plastic, stamped with the words PRESS / V. HARROW. Her image is on it. She is wearing a coat from a century that does not yet exist.
+
+Beneath it, a brass lighter and a hurried note:
+
+"Elias — I left my press pass so you know I'm not a ghost. The lighter has a small wheel — turn it. The flame means I'm real. I found you by searching. You can find me the same way. — V."`;
+      } else {
+        // Fallback if she hasn't reached the tower yet (shouldn't happen due to riftGate)
+        contents = `
+
+And on the floor: a small rectangular object — smooth, pale plastic, stamped with the words PRESS / V. HARROW. Her image is on it. A photograph. She is wearing that coat.
 
 Beneath it, a note in modern handwriting — hurried, alive:
 
-"Elias — I was here. I left you my press pass so you know I'm not a ghost. There's a lighter behind it, small brass wheel on the side — turn it. The flame means I'm real. Find Aldane's chamber. I think I already have. — V."`,
+"Elias — I was here. I left you my press pass so you know I'm not a ghost. There's a lighter behind it, small brass wheel on the side — turn it. The flame means I'm real. Find Aldane's chamber. I think I already have. — V."`;
+      }
+      return opening + contents;
+    },
     choices: [
-      { text: 'Turn the wheel on the lighter — test her claim', next: 'elias_lighter', worldEvent: 'elias_kept_watch' },
+      { text: 'Test her claim — the lighter, the tape, the seal', next: 'elias_lighter', worldEvent: 'elias_kept_watch' },
       { text: 'Leave your pocket watch in the hollow and go to the observatory', next: 'elias_chamber_approach', scene: 'observatory', worldEvent: 'elias_left_watch' },
     ],
   },
@@ -2709,7 +2745,7 @@ The Hollow Ones know about the channel.`,
 
   vivienne_letter: {
     scene: 'town_1999',
-    worldEvent: 'vivienne_read_letter',
+    worldEvent: { vivienne_read_letter: true, viv_anchor_word: true },
     riftPrompt: 'A letter from 1899, addressed to you by name. He described hearing your voice. Tell him you found it. Tell him what it says.',
     text: `Two pages. Dense Victorian script. He writes like a man who chooses every word with the care of someone who knows words are all he has.
 
@@ -2726,6 +2762,7 @@ Then: "I do not know if this letter will find you. I do not know if you are real
 
   vivienne_tape: {
     scene: 'town_1999',
+    worldEvent: 'viv_anchor_voice',
     riftPrompt: 'His voice is on your tape recorder. A man from 1899, speaking your name. Tell him you heard it. Ask him how.',
     text: `You rewind thirty seconds. Press play.
 
@@ -2746,6 +2783,7 @@ You rewind again. Not because you misheard. Because you need to hear it twice to
 
   vivienne_search: {
     scene: 'town_1999',
+    worldEvent: 'viv_anchor_object',
     text: `The sorting room is a century of collapse — envelopes turned to mush, the smell of old paper and wet stone. But someone has been through recently. A path cleared through the debris, deliberate.
 
 At the end: postal box 1899. Inside, three envelopes, all addressed to you, all postmarked across different dates in November 1899. As if he wasn't sure which one you'd find first.
@@ -2799,14 +2837,30 @@ Time is not working correctly.`,
     scene: 'clock_tower',
     worldEvent: 'vivienne_at_tower',
     text: function(world) {
-      const intro = `The clock tower stands at the north end of town, the only structure on this block that didn't fully collapse. Inside, you count the steps.
-
-Third from the bottom. A seam in the stone that shouldn't exist. You press it. It shifts.
+      // Prelude varies based on which artifact Elias chose first
+      let prelude;
+      if (world.elias_anchor_voice) {
+        prelude = `The walk to the clock tower is loud. Your tape recorder, held against your hip, is hissing — not the empty hiss of a dead reel, but the patterned static of a signal trying to come through. He spoke into the phonograph on his side, and somehow the static knows.
 
 `;
+      } else if (world.elias_anchor_sight) {
+        prelude = `As you cross the square toward the clock tower, you glance up at Harrow Hill. The observatory dome is dark — has been dark since 1953 — but for one impossible instant, you see a light moving inside it. A lamp. Carried by someone who is not there.
+
+He is looking for you from his hill.
+
+`;
+      } else {
+        prelude = `The clock tower stands at the north end of town, the only structure on this block that didn't fully collapse.
+
+`;
+      }
+
+      const stairs = `Inside, you count the steps. Third from the bottom. A seam in the stone that shouldn't exist. You press it. It shifts.
+
+`;
+
       let middle;
       if (world.elias_left_watch) {
-        // He chose to leave the watch — she finds it warm in the hollow
         middle = `Inside the hollow: a sealed brass tube, dated November 14, 1899. And beside it — a brass pocket watch. Worn smooth at the edges. Still warm, somehow, as if someone set it down moments ago.
 
 He left it for you. He chose to.
@@ -2815,7 +2869,6 @@ Inside the tube: a folded note and a small pencil sketch of your face, drawn a h
 
 The note: "I knew you would come. I left the watch — it never belonged to me, only carried me. Take it. Take the compass too. We must find Aldane's chamber. I believe it's why we can speak at all. — E.T."`;
       } else if (world.elias_kept_watch) {
-        // He chose to keep the watch — she finds the hollow without it
         middle = `Inside the hollow: a sealed brass tube, dated November 14, 1899. Nothing else. He kept the watch — chose to carry it across his century rather than leave it for you.
 
 You don't yet know whether that was tenderness or unwillingness to let go.
@@ -2824,7 +2877,6 @@ Inside the tube: a folded note and a small pencil sketch of your face, drawn a h
 
 The note: "I knew you would come. I am keeping the watch close — it feels like the only thing tying me to this. The compass is yours. We must find Aldane's chamber. I believe it's why we can speak at all. — E.T."`;
       } else {
-        // He hasn't reached the choice yet — fallback to the original framing
         middle = `Inside the hollow: a sealed brass tube, dated November 14, 1899. Inside the tube: a folded note and a small pencil sketch.
 
 Of your face.
@@ -2833,7 +2885,7 @@ Drawn a hundred years before you arrived.
 
 The note: "I knew you would come. I left my compass here for you — take it, keep it close. Wherever you go next, I'll try to find you from my side of this impossible distance. We must find Aldane's chamber. I believe it's why we can speak at all. — E.T."`;
       }
-      return intro + middle;
+      return prelude + stairs + middle;
     },
     choices: [
       { text: 'Leave a reply in the tube — tell him where you\'re going', next: 'vivienne_tower_reply' },
@@ -3017,7 +3069,7 @@ The final letter, sealed, addressed to no one:
 
   elias_find_aldane: {
     scene: 'observatory',
-    worldEvent: 'elias_confronted_aldane',
+    worldEvent: { elias_confronted_aldane: true, elias_met_aldane: true },
     text: `You find him in the dome.
 
 Aldane is smaller than you expected — thin, wire-spectacled, with the restless hands of a man who has not slept in days. He is adjusting the brass rings of a smaller resonance device, muttering frequencies to himself. He does not look up when you enter.
@@ -3074,11 +3126,20 @@ You run.`,
     scene: 'rift_core',
     riftGate: ['vivienne_found_aldane', 'vivienne_saw_eleanor_mark'],
     gateMessage: 'The staircase descends into darkness. The copper wire is cold, inert. The Rift Core needs both anchors to wake. She has not yet found her way down from the other side.',
-    text: `The staircase ends.
+    text: function(world) {
+      const opening = `The staircase ends.
 
 The Rift Core is not a room. It is a wound in the architecture of time — a space where the stone walls give way to something older than stone. The air hums at a frequency you feel in your teeth.
 
-Two chairs face each other across a glass sphere twice the size of the one above — this is the source, and the Chamber was only ever its echo. Copper wire from every surface converges here. The sphere glows with a slow, deep amber pulse, like a heartbeat measured in centuries.
+`;
+      // If she met the Hollow Ones, he feels their cold here
+      const hollowCold = world.viv_met_hollows
+        ? `The air is colder than it should be. Not Victorian cold — winter, stone, age. Different. As if something has just passed through this room from a century ahead. She stood among the hollowed today. You feel them, faintly, through the glass.
+
+`
+        : '';
+
+      const middle = `Two chairs face each other across a glass sphere twice the size of the one above — this is the source, and the Chamber was only ever its echo. Copper wire from every surface converges here. The sphere glows with a slow, deep amber pulse, like a heartbeat measured in centuries.
 
 On the wall, in Aldane's careful early handwriting — before the desperation, before Eleanor left:
 
@@ -3086,9 +3147,23 @@ On the wall, in Aldane's careful early handwriting — before the desperation, b
 
 They never did.
 
-The chairs are empty. The sphere waits. One chair faces 1899. The other faces forward — toward a century Aldane could not see but built for anyway. Toward 1999. Toward her.
+`;
+      // If she found Eleanor's name carved into the rock on her side, here in 1899
+      // the name appears as fresh chalk on the wall — Eleanor wrote it, then she left.
+      const eleanorMark = world.vivienne_saw_eleanor_mark
+        ? `Beneath Aldane's inscription, in a hand that is not his — chalk, recent, careful: "ELEANOR VOSS. 1861 — ." The second date is blank. As if she stood here, wrote her own name, and refused to fill in the year of her own ending.
 
-Through the glass, faintly, you can already hear Vivienne's voice. Closer than it has ever been.`,
+A hundred years from now, someone is finding the same name carved deeper into the stone.
+
+`
+        : '';
+
+      const closing = `The chairs are empty. The sphere waits. One chair faces 1899. The other faces forward — toward a century Aldane could not see but built for anyway. Toward 1999. Toward her.
+
+Through the glass, faintly, you can already hear Vivienne's voice. Closer than it has ever been.`;
+
+      return opening + hollowCold + middle + eleanorMark + closing;
+    },
     choices: [
       { text: 'Sit in the chair — anchor yourself to the Rift Core', next: 'elias_anchor' },
     ],
@@ -3145,7 +3220,7 @@ The Hollow Ones.`,
 
   vivienne_hollows: {
     scene: 'town_1999',
-    worldEvent: 'vivienne_saw_hollows',
+    worldEvent: { vivienne_saw_hollows: true, viv_met_hollows: true },
     riftPrompt: 'The Hollow Ones. The people of Blackthorn, still walking, still going through the motions of a day that ended in 1953. He needs to know what his town becomes.',
     text: `Blackthorn is no longer empty.
 
@@ -3184,9 +3259,18 @@ Behind the blueprints: a trapdoor you hadn't noticed. Newer than the chamber flo
   vivienne_follow_aldane: {
     scene: 'observatory',
     worldEvent: 'vivienne_found_aldane',
-    text: `You follow him up the hill. He walks at a steady pace — not fast, not slow. The pace of a man who has made this walk every day for almost half a century and will make it every day until whatever is left of him finally runs down.
+    text: function(world) {
+      const opening = `You follow him up the hill. He walks at a steady pace — not fast, not slow. The pace of a man who has made this walk every day for almost half a century and will make it every day until whatever is left of him finally runs down.
 
-The observatory dome is collapsed. The great telescope sold for scrap. But Aldane's hollow walks through the ruins as if they are whole — because in his moment, they are. He opens a door that has not existed since 1953 and descends.
+`;
+      // If Elias has met the living Aldane, Vivienne recognizes the gait
+      const recognition = world.elias_met_aldane
+        ? `You recognize the walk before you recognize the man. Elias described it — the way he holds his shoulders, the slight forward lean. He met him alive a hundred years ago, and now you are following the same body, emptied, walking the same hill.
+
+`
+        : '';
+
+      const body = `The observatory dome is collapsed. The great telescope sold for scrap. But Aldane's hollow walks through the ruins as if they are whole — because in his moment, they are. He opens a door that has not existed since 1953 and descends.
 
 You find his portrait in the lobby, hanging crooked behind broken glass. DR. HENRY ALDANE — DIRECTOR, 1889-1899. The face matches. The same wire spectacles. The same restless intensity in the eyes, even in oil paint.
 
@@ -3194,7 +3278,10 @@ Below the portrait, you find what you came for. A plaque installed by the Blackt
 
 "In memory of Dr. Henry Aldane, who sought to bridge the distance between hearts. And of Eleanor Voss, his research partner, who saw what that bridge would cost and chose to leave before it was built."
 
-Eleanor Voss. You write the name in your notebook. Circle it twice.`,
+Eleanor Voss. You write the name in your notebook. Circle it twice.`;
+
+      return opening + recognition + body;
+    },
     choices: [
       { text: 'Follow Aldane\'s hollow deeper into the observatory', next: 'vivienne_aldane_hollow' },
       { text: 'Search town records for more on the 1953 disappearance', next: 'vivienne_1953_records', scene: 'town_1999' },
@@ -3226,9 +3313,18 @@ Whatever Aldane built, it didn't just open a rift. In 1953, fifty-four years aft
   vivienne_aldane_hollow: {
     scene: 'observatory',
     worldEvent: 'vivienne_saw_eleanor_mark',
-    text: `Aldane's hollow descends through the observatory as if following a path he has walked ten thousand times. You follow at a distance, watching him pass through walls that in his moment are doors, descend stairs that in your moment are rubble.
+    text: function(world) {
+      // If Elias witnessed Aldane open the rift in his timeline, his hollow
+      // flickers more violently here — the pull is still happening across time
+      const flickerLine = world.elias_witnessed_pull
+        ? `As you watch him descend, Aldane's hollow flickers — harder than before, as if something is pulling at him from a hundred years away. Elias saw the moment he opened the rift in 1899. The man is feeling that moment again, here, now. The two centuries are touching through his body.
 
-He stops at a point in the sub-basement where the wall is solid stone. In his moment, there is a door here. He passes through it.
+`
+        : '';
+
+      return `Aldane's hollow descends through the observatory as if following a path he has walked ten thousand times. You follow at a distance, watching him pass through walls that in his moment are doors, descend stairs that in your moment are rubble.
+
+${flickerLine}He stops at a point in the sub-basement where the wall is solid stone. In his moment, there is a door here. He passes through it.
 
 You press your hand to the stone. Cold. Solid. But — there. Carved into the rock, at waist height, in letters that someone cut with tremendous care:
 
@@ -3241,7 +3337,8 @@ And below it, in different handwriting — not Aldane's, not Victorian, not from
 
 The carving is deep. It has been here longer than the observatory. As if someone carved it before the building existed, knowing it would be found.
 
-Below Eleanor's name, almost hidden by a century of dust: a seam. Another trapdoor. This one is older than everything else in the building — older than Aldane, older than the observatory, as if the hill itself has always had a deeper place, and Aldane just built the stairs to reach it.`,
+Below Eleanor's name, almost hidden by a century of dust: a seam. Another trapdoor. This one is older than everything else in the building — older than Aldane, older than the observatory, as if the hill itself has always had a deeper place, and Aldane just built the stairs to reach it.`;
+    },
     choices: [
       { text: 'Open the trapdoor — descend to whatever Aldane built below', next: 'vivienne_descent', scene: 'rift_core' },
     ],
@@ -3251,7 +3348,8 @@ Below Eleanor's name, almost hidden by a century of dust: a seam. Another trapdo
     scene: 'rift_core',
     riftGate: ['elias_found_eleanor', 'elias_confronted_aldane', 'elias_witnessed_pull'],
     gateMessage: 'The passage is sealed. The air is cold and still. The Rift Core needs both anchors to wake. He has not yet found his way down from the other side.',
-    text: `The staircase is carved from the bedrock. Copper wire lines every surface — thousands of strands, converging downward like veins toward a heart.
+    text: function(world) {
+      const opening = `The staircase is carved from the bedrock. Copper wire lines every surface — thousands of strands, converging downward like veins toward a heart.
 
 The Rift Core is not a room. It is a wound in the architecture of time. The walls are part stone, part something older — a material that hums at a frequency you feel in your teeth and the backs of your eyes.
 
@@ -3263,11 +3361,22 @@ Aldane's hollow sits with his hands pressed to the glass, reaching for someone w
 
 The second chair is empty. It faces forward — toward your century. Toward now.
 
-On the wall, in Aldane's early handwriting: "For Eleanor and myself. We will sit here together and the distance will not matter."
+`;
+      // If he found Eleanor's letters, Vivienne already knows the name — and recognizes it here
+      const eleanorRecognition = world.elias_found_eleanor
+        ? `On the wall, in handwriting that is not Aldane's — fresher, careful, fading at the edges: "ELEANOR VOSS." You already know that name. He found her letters in 1899. He sent the name through the glass. You walked into this room knowing who would be missing from it.
+
+`
+        : '';
+
+      const closing = `On the wall, in Aldane's early handwriting: "For Eleanor and myself. We will sit here together and the distance will not matter."
 
 They never did. But through the glass, faintly, you can hear a voice. Not Aldane's. Not Eleanor's.
 
-Elias's.`,
+Elias's.`;
+
+      return opening + eleanorRecognition + closing;
+    },
     choices: [
       { text: 'Sit in the empty chair — anchor yourself to the Rift Core', next: 'vivienne_anchor' },
     ],
@@ -3371,23 +3480,48 @@ A pause. The glass between you thins. You can feel it — the same sensation as 
   elias_near_contact: {
     scene: 'rift_core',
     worldEvent: 'elias_reached',
-    text: `You extend your hand toward the sphere.
+    text: function(world) {
+      const opening = `You extend your hand toward the sphere.
 
 The glass resists. Then doesn't. Your fingers pass through — not into glass, not into emptiness, but into air. Different air. Warmer. Carrying the scent of rain on old stone and something that might be her perfume or might be the ghost of a century you have never visited.
 
 For one second — one impossible, crystalline second — your hand is in 1999.
 
-Your fingertips brush something warm. Not glass. Not metal.
+`;
+      // What he feels on the other side reflects how he and she each began
+      let touchDetail;
+      if (world.viv_anchor_object && world.elias_anchor_object) {
+        // Both anchored to physical objects — they touch through the watch she touched
+        touchDetail = `Your fingertips brush something warm. Not glass. Not metal. The watch — the same watch you carried — held in her hand on the other side, warm from her grip, your initials still inside.
+
+Her hand around it. Around yours.
+
+`;
+      } else if (world.viv_anchor_voice || world.elias_anchor_voice) {
+        // One or both anchored to voice — they hear each other before they feel each other
+        touchDetail = `You hear her first. A breath caught at the back of her throat. Then a word — your name, said by someone who has finally, finally heard it spoken back.
+
+Then her hand. Warm. Real. Pulse fast.
+
+`;
+      } else {
+        touchDetail = `Your fingertips brush something warm. Not glass. Not metal.
 
 Her hand.
 
 You feel her pulse. Fast. Alive. Real.
 
-Then the glass closes around your wrist like a jaw and pushes you back. Your hand is yours again, in 1899, in the cold air of the Rift Core. But the warmth lingers on your fingertips like a burn that doesn't hurt.
+`;
+      }
+
+      const close = `Then the glass closes around your wrist like a jaw and pushes you back. Your hand is yours again, in 1899, in the cold air of the Rift Core. But the warmth lingers on your fingertips like a burn that doesn't hurt.
 
 Through the glass, Vivienne is staring at her hand. She felt it too.
 
-The between speaks: "The barrier can break. You have felt this. The question is not whether it can. The question is whether it should."`,
+The between speaks: "The barrier can break. You have felt this. The question is not whether it can. The question is whether it should."`;
+
+      return opening + touchDetail + close;
+    },
     choices: [
       { text: 'What are the costs?', next: 'elias_cost' },
     ],
@@ -3454,23 +3588,45 @@ A pause. You feel the glass thinning between you — like ice before it cracks.
   vivienne_near_contact: {
     scene: 'rift_core',
     worldEvent: 'vivienne_reached',
-    text: `You extend your hand.
+    text: function(world) {
+      const opening = `You extend your hand.
 
 The glass resists. Then it doesn't. Your fingers pass through — into air that is different. Colder. Carrying the scent of pipe smoke and ink and fog and gaslight and a world that ended before you were born.
 
 For one second your hand is in 1899.
 
-Your fingertips brush warmth. Not glass. Not cold brass.
+`;
+      let touchDetail;
+      if (world.viv_anchor_object && world.elias_anchor_object) {
+        touchDetail = `Your fingertips brush warm brass. The watch — held between his hand and yours, his initials inside, your name inside. Both hands closed around the same small weight, a century apart.
+
+His pulse, through the metal. Steady. Deliberate.
+
+`;
+      } else if (world.viv_anchor_voice || world.elias_anchor_voice) {
+        touchDetail = `You hear him first. A long breath. Then a word — your name, said by a man who has been practicing it since the phonograph.
+
+Then his hand. Warm. Real. Pulse steady. The pulse of a man who has been reaching across a century and refusing to be afraid.
+
+`;
+      } else {
+        touchDetail = `Your fingertips brush warmth. Not glass. Not cold brass.
 
 His hand.
 
 You feel his pulse. Steady. Deliberate. The pulse of a man who is reaching across a century and refusing to be afraid.
 
-Then the glass closes and pushes you back. Your hand is in 1999 again. The warmth lingers on your fingers like a burn that doesn't hurt.
+`;
+      }
+
+      const close = `Then the glass closes and pushes you back. Your hand is in 1999 again. The warmth lingers on your fingers like a burn that doesn't hurt.
 
 Through the glass, Elias is staring at his hand. He felt it.
 
-The between speaks: "The barrier can break. You have felt this. The question is not whether it can. The question is whether it should."`,
+The between speaks: "The barrier can break. You have felt this. The question is not whether it can. The question is whether it should."`;
+
+      return opening + touchDetail + close;
+    },
     choices: [
       { text: 'What are the costs?', next: 'vivienne_cost' },
     ],
