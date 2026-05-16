@@ -1102,6 +1102,53 @@ function showClosingCard(ending) {
   story.appendChild(card);
   requestAnimationFrame(() => card.classList.add('visible'));
   story.scrollTop = story.scrollHeight;
+
+  // Echoes card — fragments of paths neither of you took. Fades in
+  // quietly after a beat, suggests the shape of the unseen story.
+  setTimeout(() => showEchoesCard(), 6000);
+}
+
+// Lists 3-5 unreached moments based on which flags were/weren't set.
+// Honors the 'light branching + echoes' design call.
+function showEchoesCard() {
+  const story = document.getElementById('g-story');
+  if (!story) return;
+  const w = getWorld();
+
+  // Each entry is [flag, suppress-if-set, fragment-text].
+  // If the player DIDN'T set the flag, this fragment shows up.
+  const candidates = [
+    [w.elias_met_aldane,       'In another telling — Elias never knocked on the dome door. Aldane went mad in private.'],
+    [w.elias_saw_aldane_break, 'In another telling — Elias never saw the locket fall. He never had to wonder if he would become Henry.'],
+    [w.viv_met_hollows,        'In another telling — Vivienne walked through Blackthorn empty and did not stop. The Hollow Ones never said her name.'],
+    [w.viv_spoke_to_hollow,    'In another telling — the woman in the yellow housedress hung laundry forever, and no one ever told him she forgave him.'],
+    [w.elias_found_eleanor,    'In another telling — Eleanor\'s letters stayed in the archive. Her name was never carried back to him.'],
+    [w.vivienne_saw_eleanor_mark, 'In another telling — the carving in the rock was never found. Eleanor was a footnote on a plaque.'],
+    [w.elias_anchor_voice,     'In another telling — Elias did not lift the phonograph needle. He never heard her voice for the first time.'],
+    [w.elias_anchor_sight,     'In another telling — Elias did not look up at Harrow Hill. The lamp moved through the dome without a witness.'],
+    [w.viv_anchor_word,        'In another telling — Vivienne did not open the letter. The envelope stayed sealed in the post office, forever.'],
+    [w.viv_anchor_voice,       'In another telling — Vivienne did not rewind the tape. His voice stayed under the static.'],
+  ];
+
+  // Pick fragments where the flag is FALSY (the player didn't take that path)
+  const fragments = candidates.filter(c => !c[0]).map(c => c[1]);
+  if (fragments.length === 0) return; // they did everything — no echoes
+
+  // Pick 3-5 random fragments
+  fragments.sort(() => Math.random() - 0.5);
+  const chosen = fragments.slice(0, Math.min(4, fragments.length));
+
+  const echo = document.createElement('div');
+  echo.className = 's-block s-narrate';
+  echo.style.cssText = 'padding:1.5rem 1rem;border-left:none;margin-top:1.5rem;opacity:0;transition:opacity 2s ease';
+  let html = '<p style="font-family:\'Cinzel\',serif;font-size:9px;letter-spacing:0.45em;text-transform:uppercase;color:var(--gold-dim);font-style:normal;margin-bottom:1.2rem;text-align:center">Echoes — paths neither of you took</p>';
+  chosen.forEach(line => {
+    html += '<p style="font-style:italic;font-size:13px;color:#9a8868;line-height:1.85;margin-bottom:0.7rem;text-align:center">' + line + '</p>';
+  });
+  echo.innerHTML = html;
+  story.appendChild(echo);
+  requestAnimationFrame(() => { echo.style.opacity = '0.85'; });
+  story.scrollTop = story.scrollHeight;
 }
 
 function copyRoomCode() {
@@ -3118,7 +3165,37 @@ The absence does not answer. It does not need to. It simply is. And in its prese
 
 You run.`,
     choices: [
-      { text: 'Descend to the Rift Core — before the hollowing reaches you', next: 'elias_descent', scene: 'rift_core' },
+      { text: 'Stop outside the dome — look back', next: 'elias_aldane_aftermath' },
+    ],
+  },
+
+  // HARD BRANCH 3 (HB3) — exclusive scene only reachable by the
+  // 'find Aldane → warn him → witness the pull' path. Players who
+  // skip the Aldane confrontation never see this content.
+  elias_aldane_aftermath: {
+    scene: 'observatory',
+    worldEvent: 'elias_saw_aldane_break',
+    text: `You stop at the edge of the hill. You look back at the dome.
+
+The light has gone out. The brass scream has stopped. There is only the wind, and the smell of ozone, and the faint smell of something else — something older — like burnt sugar or old paper.
+
+You walk back. You should not. You walk back anyway.
+
+The dome is empty. Aldane is not there. His brass rings are still spinning, slowly, in the silence. On the floor where he stood, a small object catches the lamplight.
+
+A locket. Old silver. Worn at the edges. You open it.
+
+Inside: a daguerreotype of a woman in her thirties, dark eyes, the kind of mouth that does not smile for portraits. Beneath it, in tiny careful script: <em>Eleanor, 1898.</em>
+
+You hold the locket for a long moment. You think: <em>he reached for her. What reached back was the between. And now he is somewhere I cannot find, and Eleanor is still gone, and this story is going to repeat itself — has been repeating itself, in some form, for as long as people have wanted what they cannot have.</em>
+
+You think: <em>Vivienne is on the other side of a glass that is now wider open than it has ever been.</em>
+
+You think: <em>I have to get to her before I become him.</em>
+
+You close the locket. You put it in your coat pocket, beside your watch. Then you walk to the deeper chamber.`,
+    choices: [
+      { text: 'Descend to the Rift Core', next: 'elias_descent', scene: 'rift_core' },
     ],
   },
 
@@ -3234,8 +3311,42 @@ One figure stands apart. Older than the others. A man in a laboratory coat — V
 
 Every day. For forty-six years.`,
     choices: [
+      { text: 'Speak to one of them — try to make contact', next: 'vivienne_hollow_speaks' },
       { text: 'Follow him — the one walking to the observatory', next: 'vivienne_follow_aldane', scene: 'observatory' },
       { text: 'Search for records — what happened on November 14, 1953', next: 'vivienne_1953_records' },
+    ],
+  },
+
+  // HARD BRANCH 4 (HB4) — exclusive scene only reachable by speaking
+  // directly to a Hollow. Players who bypass the Hollow Ones (or just
+  // follow Aldane without trying to make contact) never see this.
+  vivienne_hollow_speaks: {
+    scene: 'town_1999',
+    worldEvent: 'viv_spoke_to_hollow',
+    text: `You pick one. A young woman, maybe twenty-five, in a yellow housedress that hasn't been made in fifty years. She is hanging laundry on a line that no longer exists, in a backyard that is now a stand of dead birch.
+
+You step in front of her. You wave a hand inches from her face. Nothing. She lifts another clothespin. The line bows under sheets you cannot see.
+
+"Hello?" you try. The word is small, foolish, useless.
+
+The woman pauses. Just for a fraction of a second. Her hand stops in mid-air. Her head tilts — as if she heard something not quite at the right frequency, not from the right century.
+
+Then she says, without looking at you, in a voice rusted from forty-six years of not speaking:
+
+"Vivienne?"
+
+You go very still.
+
+You do not know how she knows your name. Neither does she. Her hand is still in the air, holding the absent clothespin. Her face is still empty.
+
+"Tell him," she says. "Tell him I forgive him. I never asked him to be the one who knew."
+
+She does not say who <em>he</em> is. She does not need to.
+
+Then she finishes hanging the laundry that is not there, and walks back into a kitchen that collapsed thirty years before you were born, and you are standing alone in a dead yard holding the name of a man you have never met on your tongue.`,
+    choices: [
+      { text: 'Follow Aldane\'s hollow up the hill', next: 'vivienne_follow_aldane', scene: 'observatory' },
+      { text: 'Search the town records — find who she was', next: 'vivienne_1953_records' },
     ],
   },
 
@@ -4682,6 +4793,7 @@ const KEEPSAKES = {
     elias_eleanor_trail:     ['Aldane\'s key', 'Eleanor\'s letters', 'the weight of someone else\'s foresight'],
     elias_find_aldane:       ['Aldane\'s key', 'the image of a man who will not stop'],
     elias_warn_aldane:       ['Aldane\'s key', 'the memory of the between coming through'],
+    elias_aldane_aftermath:  ['Aldane\'s key', 'Eleanor\'s locket', 'the knowledge of what you might become'],
     elias_descent:           ['Eleanor\'s last letter', 'the hum of the Rift Core'],
     elias_anchor:            ['a golden thread of light', 'the sight of her face through the glass'],
     act2_end:                ['a golden thread', 'Eleanor\'s voice', 'the knowledge of what the chairs are for'],
@@ -4707,6 +4819,7 @@ const KEEPSAKES = {
     act2_gate:                 ['a brass compass', 'a warning in unknown handwriting'],
     vivienne_act2_start:       ['a brass compass', 'a warning in unknown handwriting'],
     vivienne_hollows:          ['a brass compass', 'the image of a town still walking'],
+    vivienne_hollow_speaks:    ['a brass compass', 'a forgiveness she was told to carry'],
     vivienne_chamber_search:   ['a brass compass', 'Aldane\'s blueprints of the Rift Core'],
     vivienne_follow_aldane:    ['a brass compass', 'the name Eleanor Voss'],
     vivienne_1953_records:     ['a brass compass', 'a newspaper from November 15, 1953'],
