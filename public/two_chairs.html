@@ -837,6 +837,7 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
     <div style="font-family:'Cinzel',serif;font-size:clamp(9px,1.1vw,11px);letter-spacing:0.5em;color:rgba(201,168,76,0.4);text-transform:uppercase;margin-top:1.5rem;opacity:0;animation:fadeIn 1s ease 2.6s forwards">A cooperative story for two</div>
     <button class="enter-btn" onclick="showRoomCreate()">Create a Room</button>
     <button class="enter-btn" onclick="showRoomJoin()" style="margin-top:0.8rem;animation-delay:3.2s">Join a Room</button>
+    <button class="enter-btn" id="rejoin-btn" onclick="rejoinSavedRoom()" style="display:none;margin-top:0.8rem;border-color:rgba(138,26,26,0.5);color:#d08080;animation-delay:3.4s">Rejoin Your Room</button>
     <div><button class="howto-link" onclick="openHowTo()">How to Play</button></div>
   </div>
 </div>
@@ -922,6 +923,7 @@ body{background:var(--ink);color:var(--parchment);font-family:'EB Garamond',seri
     </div>
   </div>
   <div class="select-hint">Two players · Two timelines · One mystery</div>
+  <button class="howto-link" id="reset-chars-btn" style="display:none;margin-top:1.5rem" onclick="releaseCharacters()">Reset characters (use if both are locked from a past session)</button>
 </div>
 
 <!-- GAME SCREEN -->
@@ -1150,6 +1152,36 @@ function showEchoesCard() {
   requestAnimationFrame(() => { echo.style.opacity = '0.85'; });
   story.scrollTop = story.scrollHeight;
 }
+
+// Rejoin a room saved from a previous session (browser closed, tab
+// navigated away, etc.). Uses the room code stored with the save.
+function rejoinSavedRoom() {
+  const save = getSave();
+  if (!save || !save.roomCode) {
+    alert('No saved room to rejoin.');
+    return;
+  }
+  // Reconnect to the same Firebase room
+  roomCode = save.roomCode;
+  roomRef = db.ref('rooms/' + roomCode);
+  firebaseReady = true;
+  // Load the saved game (which also reclaims the character)
+  loadGame();
+}
+
+// Show the Rejoin button on the title screen if a save exists.
+(function showRejoinIfSaved() {
+  setTimeout(() => {
+    const save = getSave();
+    if (save && save.roomCode) {
+      const btn = document.getElementById('rejoin-btn');
+      if (btn) {
+        btn.style.display = '';
+        btn.textContent = 'Rejoin — ' + save.roomCode;
+      }
+    }
+  }, 200);
+})();
 
 function copyRoomCode() {
   if (!roomCode) return;
@@ -1524,9 +1556,11 @@ function goToSelect() {
   if (roomRef) {
     roomRef.child('players').on('value', snap => {
       const players = snap.val() || {};
+      let claimedCount = 0;
       document.querySelectorAll('.char-card').forEach(card => {
         const char = card.classList.contains('elias') ? 'elias' : 'vivienne';
         if (players[char]) {
+          claimedCount++;
           card.style.opacity = '0.3';
           card.style.pointerEvents = 'none';
           const cta = card.querySelector('.char-cta');
@@ -1538,8 +1572,22 @@ function goToSelect() {
           if (cta) cta.textContent = char === 'elias' ? 'Enter 1899 →' : 'Enter 1999 →';
         }
       });
+      // If both characters appear locked, show an escape hatch — usually
+      // means the previous session left the players list dirty.
+      const resetBtn = document.getElementById('reset-chars-btn');
+      if (resetBtn) {
+        resetBtn.style.display = claimedCount >= 2 ? '' : 'none';
+      }
     });
   }
+}
+
+// Clear the room's players list so the two cards become clickable again.
+// Used when a previous session left both characters claimed.
+function releaseCharacters() {
+  if (!roomRef) return;
+  if (!confirm('Reset both character claims in this room? Use this only if both characters appear locked from a previous play session.')) return;
+  roomRef.child('players').set({});
 }
 
 function selectChar(char) {
@@ -2589,7 +2637,7 @@ You arrived this morning with a press pass and bad coffee. What you found in the
 
 An envelope. Sealed. Your name. Your Boston address. A postmark dated November 14, 1899.
 
-Inside, a single line in careful Victorian script:
+Inside, two folded pages of careful Victorian script — heavy, dense, the ink dark as iron. The top line, the only thing you have managed to read in the seconds since you opened it:
 
 "I can hear you. Can you hear me? — E.T."
 
@@ -4367,11 +4415,16 @@ function choose(choice) {
 
     updateKeepsakes();
 
-    // Clear choices, keep rift input
+    // Clear choices
     const choicesEl = document.getElementById('g-choices');
-    const rift      = choicesEl.querySelector('.rift-row');
     choicesEl.innerHTML = '';
-    if (rift) choicesEl.appendChild(rift);
+
+    // Clear the story area so the previous branch's narration, beats,
+    // and echoes don't pile up under the new scene. Each branch reads
+    // like a fresh page — the partner indicator in the header still
+    // carries continuity.
+    const storyEl = document.getElementById('g-story');
+    if (storyEl) storyEl.innerHTML = '';
 
     narrate(resolveText(branch.text), () => showChoices(branch.choices));
   }, postChoiceMs);
